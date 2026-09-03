@@ -1,0 +1,54 @@
+﻿  device: NVIDIA GeForce RTX 4090
+
+  building dataset ...
+  corpus: D:\Bs8414_05052026\Part1\_completed
+  185 usable, 1 rejected
+    - BS8414_DCLG_Test1_adv_debug: excluded: debug case; Core_MATERIAL HEAT_OF_REACTION=1500 vs 2300 in every other DCLG_Test1_adv deck, so it is a different system under the same name
+  params (185, 16)  tc (185, 181, 16)  hrr (185, 181, 5)
+  partial: BS8414_HPL_WC_noair_nogap (180/181 steps, padded+masked)
+
+  split mode: hash
+    train  142 sims  41 systems  8/8 geometries
+    valid   20 sims  16 systems  8/8 geometries
+    test    23 sims  20 systems  8/8 geometries
+
+  target: 16 thermocouples (External_LV1 x8 + External_LV2 x8)
+          5 HRR channels (HRR, Q_RADI, Q_CONV, Q_COND, Q_TOTAL)
+  model:  MLP-Attention-LSTM (Part1, KAN ablation control)
+  loss:   tc + 0.3 * hrr  (no weight penalty)
+
+  === member 1/3 (seed 42) ===
+    epoch    0  train 2.86936 (tc 2.08680 hrr 2.60853)  valid 2.98168 (tc 2.21319 hrr 2.56163)  lr 1.00e-03  *
+    epoch   10  train 2.87012 (tc 2.08780 hrr 2.60775)  valid 2.98168 (tc 2.21319 hrr 2.56163)  lr 1.00e-03
+    epoch   20  train 2.86807 (tc 2.08722 hrr 2.60283)  valid 2.98168 (tc 2.21319 hrr 2.56163)  lr 5.00e-04
+    epoch   30  train 2.86938 (tc 2.08906 hrr 2.60109)  valid 2.98168 (tc 2.21319 hrr 2.56163)  lr 5.00e-04
+    epoch   40  train 2.86430 (tc 2.08547 hrr 2.59609)  valid 2.98168 (tc 2.21319 hrr 2.56163)  lr 2.50e-04
+    epoch   50  train 2.86858 (tc 2.08981 hrr 2.59590)  valid 2.98168 (tc 2.21319 hrr 2.56163)  lr 1.25e-04
+    epoch   60  train 2.86972 (tc 2.08878 hrr 2.60315)  valid 2.98168 (tc 2.21319 hrr 2.56163)  lr 1.25e-04
+    early stop at epoch 60 (best 2.98168 @ 0)
+    saved models_part1_mlp_r1\part1_member0.pt  (0.1 min)
+
+  === member 2/3 (seed 43) ===
+    epoch    0  train 2.64753 (tc 2.02264 hrr 2.08294)  valid 2.70471 (tc 2.04042 hrr 2.21429)  lr 1.00e-03  *
+    epoch   10  train 2.64742 (tc 2.02239 hrr 2.08343)  valid 2.70471 (tc 2.04042 hrr 2.21429)  lr 1.00e-03
+    epoch   20  train 2.64747 (tc 2.02140 hrr 2.08692)  valid 2.70471 (tc 2.04042 hrr 2.21429)  lr 5.00e-04
+    epoch   30  train 2.65002 (tc 2.02340 hrr 2.08872)  valid 2.70471 (tc 2.04042 hrr 2.21429)  lr 5.00e-04
+    epoch   40  train 2.64762 (tc 2.02240 hrr 2.08406)  valid 2.70471 (tc 2.04042 hrr 2.21429)  lr 2.50e-04
+    epoch   50  train 2.64794 (tc 2.02312 hrr 2.08276)  valid 2.70471 (tc 2.04042 hrr 2.21429)  lr 1.25e-04
+    epoch   60  train 2.64689 (tc 2.02198 hrr 2.08304)  valid 2.70471 (tc 2.04042 hrr 2.21429)  lr 1.25e-04
+    early stop at epoch 60 (best 2.70471 @ 0)
+    saved models_part1_mlp_r1\part1_member1.pt  (0.1 min)
+
+  === member 3/3 (seed 44) ===
+    epoch    0  train 2.92140 (tc 2.22864 hrr 2.30922)  valid 2.92726 (tc 2.23655 hrr 2.30235)  lr 1.00e-03  *
+    epoch   10  train 2.92573 (tc 2.23176 hrr 2.31322)  valid 2.92726 (tc 2.23655 hrr 2.30235)  lr 1.00e-03
+    epoch   20  train 2.92105 (tc 2.22842 hrr 2.30877)  valid 2.92726 (tc 2.23655 hrr 2.30235)  lr 5.00e-04
+    epoch   30  train 2.92173 (tc 2.22903 hrr 2.30898)  valid 2.92726 (tc 2.23655 hrr 2.30235)  lr 5.00e-04
+    epoch   40  train 2.92058 (tc 2.22705 hrr 2.31176)  valid 2.92726 (tc 2.23655 hrr 2.30235)  lr 2.50e-04
+    epoch   50  train 2.92125 (tc 2.22868 hrr 2.30853)  valid 2.92726 (tc 2.23655 hrr 2.30235)  lr 1.25e-04
+    epoch   60  train 2.92298 (tc 2.22975 hrr 2.31076)  valid 2.92726 (tc 2.23655 hrr 2.30235)  lr 1.25e-04
+    early stop at epoch 60 (best 2.92726 @ 0)
+    saved models_part1_mlp_r1\part1_member2.pt  (0.1 min)
+
+  done. 3 member(s) in models_part1_mlp_r1
+  next: python evaluate_part1.py --model-dir models_part1_mlp_r1

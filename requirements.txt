@@ -1,0 +1,27 @@
+# bs8414_MLP_surrogate — Python dependencies
+#
+# Pinned to the versions this project's own venv actually runs (verified
+# 2026-09-03). Every project here has its OWN venv; they are never shared, and the
+# two model families are deliberately on different torch builds.
+#
+# PyTorch is NOT installed from this file — it needs the CUDA wheel index:
+#
+#   python -m venv venv
+#   .\venv\Scripts\activate
+#   pip install torch==2.5.1+cu121 --index-url https://download.pytorch.org/whl/cu121
+#   pip install -r requirements.txt
+#
+# Verify the GPU is actually being used before training:
+#   python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+# Target hardware: NVIDIA RTX 4090 (24 GB); config sets DEVICE = "cuda".
+# Python 3.12.9.
+
+numpy==2.5.2         # arrays throughout
+pandas==3.0.5        # DEVC/HRR CSV parsing and the app tables
+scikit-learn==1.9.0  # scalers and the R2/RMSE metrics
+scipy==1.18.0        # signal and stats helpers
+matplotlib==3.11.1   # every figure and the app plots
+pillow==12.3.0       # figure export
+tqdm==4.70.0         # progress bars in the campaign drivers
+shap==0.52.0         # additive-feature attribution (shap_attribution.py)
+streamlit==1.63.0    # the Part1 prediction app (app_part1.py)

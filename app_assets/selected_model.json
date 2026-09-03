@@ -1,0 +1,27 @@
+{
+ "schema": "bs8414-part1-selected-model/1",
+ "generated_utc": "2026-09-01T18:07:42Z",
+ "kind": "sensor",
+ "selected": "models_part1_bal_s61_r2",
+ "files": [
+  "part1_member0.pt",
+  "part1_member1.pt",
+  "part1_member2.pt"
+ ],
+ "criterion": "combined valid+test TC R2 (evaluation_part1.json), hash split only",
+ "metrics": {
+  "valid_tc_r2": 0.8063011169433594,
+  "test_tc_r2": 0.8129768967628479,
+  "test_tc_rmse_degC": 61.76176071166992,
+  "test_hrr_r2": 0.9507834911346436
+ },
+ "score": 0.8096390068531036,
+ "n_candidates": 35,
+ "runner_up": "models_part1_mlp_r3_seed48",
+ "runner_up_score": 0.8002224564552307,
+ "margin": 0.009416550397872925,
+ "separated_beyond_noise": false,
+ "noise_band": 0.02,
+ "validation_only_winner": "models_part1_bal_s61_r2",
+ "validation_agrees": true
+}

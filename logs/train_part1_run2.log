@@ -1,0 +1,299 @@
+﻿  device: NVIDIA GeForce RTX 4090
+
+  building dataset ...
+  corpus: D:\Bs8414_05052026\Part1\_completed
+  185 usable, 1 rejected
+    - BS8414_DCLG_Test1_adv_debug: excluded: debug case; Core_MATERIAL HEAT_OF_REACTION=1500 vs 2300 in every other DCLG_Test1_adv deck, so it is a different system under the same name
+  params (185, 16)  tc (185, 181, 16)  hrr (185, 181, 5)
+  partial: BS8414_HPL_WC_noair_nogap (180/181 steps, padded+masked)
+
+  split mode: hash
+    train  142 sims  41 systems  8/8 geometries
+    valid   20 sims  16 systems  8/8 geometries
+    test    23 sims  20 systems  8/8 geometries
+
+  target: 16 thermocouples (External_LV1 x8 + External_LV2 x8)
+          5 HRR channels (HRR, Q_RADI, Q_CONV, Q_COND, Q_TOTAL)
+  model:  MLP-Attention-LSTM (Part1, KAN ablation control)
+  loss:   tc + 0.3 * hrr  (no weight penalty)
+
+  === member 1/3 (seed 42) ===
+    [sentinel] weights moved after epoch 0: |dW| = 3.2872e+00
+    epoch    0  train 1.80737 (tc 1.39345 hrr 1.37971)  valid 1.41989 (tc 1.18052 hrr 0.79789)  lr 1.00e-03  *
+    epoch    1  train 1.14724 (tc 0.96668 hrr 0.60187)  valid 1.22451 (tc 1.03102 hrr 0.64499)  lr 1.00e-03  *
+    epoch    2  train 1.03551 (tc 0.87315 hrr 0.54120)  valid 1.15097 (tc 0.96997 hrr 0.60335)  lr 1.00e-03  *
+    epoch    3  train 0.98038 (tc 0.82489 hrr 0.51830)  valid 1.11731 (tc 0.93894 hrr 0.59459)  lr 1.00e-03  *
+    epoch    4  train 0.94342 (tc 0.79400 hrr 0.49806)  valid 1.10087 (tc 0.92469 hrr 0.58725)  lr 1.00e-03  *
+    epoch    5  train 0.91792 (tc 0.77198 hrr 0.48649)  valid 1.07692 (tc 0.90265 hrr 0.58090)  lr 1.00e-03  *
+    epoch    6  train 0.90383 (tc 0.75883 hrr 0.48332)  valid 1.05673 (tc 0.88101 hrr 0.58573)  lr 1.00e-03  *
+    epoch    7  train 0.88087 (tc 0.73829 hrr 0.47525)  valid 1.04103 (tc 0.87434 hrr 0.55562)  lr 1.00e-03  *
+    epoch    8  train 0.86877 (tc 0.72959 hrr 0.46393)  valid 1.02560 (tc 0.86092 hrr 0.54892)  lr 1.00e-03  *
+    epoch    9  train 0.85381 (tc 0.71725 hrr 0.45520)  valid 1.01634 (tc 0.85200 hrr 0.54780)  lr 1.00e-03  *
+    epoch   10  train 0.84840 (tc 0.71258 hrr 0.45272)  valid 1.01339 (tc 0.84887 hrr 0.54841)  lr 1.00e-03  *
+    epoch   11  train 0.83933 (tc 0.70401 hrr 0.45107)  valid 1.00160 (tc 0.84071 hrr 0.53630)  lr 1.00e-03  *
+    epoch   13  train 0.82407 (tc 0.69085 hrr 0.44406)  valid 1.00041 (tc 0.84093 hrr 0.53158)  lr 1.00e-03  *
+    epoch   14  train 0.82054 (tc 0.68886 hrr 0.43891)  valid 0.99029 (tc 0.83331 hrr 0.52327)  lr 1.00e-03  *
+    epoch   15  train 0.80052 (tc 0.67216 hrr 0.42786)  valid 0.97683 (tc 0.82163 hrr 0.51735)  lr 1.00e-03  *
+    epoch   17  train 0.78900 (tc 0.66345 hrr 0.41848)  valid 0.97546 (tc 0.82282 hrr 0.50879)  lr 1.00e-03  *
+    epoch   18  train 0.78159 (tc 0.65565 hrr 0.41981)  valid 0.95628 (tc 0.80292 hrr 0.51121)  lr 1.00e-03  *
+    epoch   19  train 0.76270 (tc 0.63829 hrr 0.41470)  valid 0.93617 (tc 0.78510 hrr 0.50356)  lr 1.00e-03  *
+    epoch   20  train 0.73631 (tc 0.61288 hrr 0.41144)  valid 0.91747 (tc 0.76719 hrr 0.50092)  lr 1.00e-03  *
+    epoch   21  train 0.71574 (tc 0.59413 hrr 0.40536)  valid 0.91576 (tc 0.76721 hrr 0.49515)  lr 1.00e-03  *
+    epoch   22  train 0.70261 (tc 0.58219 hrr 0.40142)  valid 0.91424 (tc 0.76470 hrr 0.49847)  lr 1.00e-03  *
+    epoch   23  train 0.70098 (tc 0.58093 hrr 0.40017)  valid 0.89650 (tc 0.74718 hrr 0.49774)  lr 1.00e-03  *
+    epoch   26  train 0.68195 (tc 0.56460 hrr 0.39114)  valid 0.88795 (tc 0.74223 hrr 0.48575)  lr 1.00e-03  *
+    epoch   30  train 0.66720 (tc 0.55084 hrr 0.38787)  valid 0.88594 (tc 0.74136 hrr 0.48196)  lr 1.00e-03  *
+    epoch   31  train 0.65943 (tc 0.54488 hrr 0.38184)  valid 0.87511 (tc 0.72801 hrr 0.49033)  lr 1.00e-03  *
+    epoch   32  train 0.66131 (tc 0.54613 hrr 0.38392)  valid 0.85428 (tc 0.71460 hrr 0.46560)  lr 1.00e-03  *
+    epoch   40  train 0.64575 (tc 0.53228 hrr 0.37823)  valid 0.86611 (tc 0.72364 hrr 0.47492)  lr 1.00e-03
+    epoch   41  train 0.63523 (tc 0.52496 hrr 0.36755)  valid 0.83060 (tc 0.69704 hrr 0.44520)  lr 1.00e-03  *
+    epoch   44  train 0.62092 (tc 0.51264 hrr 0.36093)  valid 0.82888 (tc 0.69821 hrr 0.43557)  lr 1.00e-03  *
+    epoch   47  train 0.61346 (tc 0.50745 hrr 0.35336)  valid 0.82345 (tc 0.68852 hrr 0.44976)  lr 1.00e-03  *
+    epoch   50  train 0.60195 (tc 0.49753 hrr 0.34806)  valid 0.83904 (tc 0.70332 hrr 0.45240)  lr 1.00e-03
+    epoch   52  train 0.60289 (tc 0.49901 hrr 0.34629)  valid 0.82222 (tc 0.68832 hrr 0.44632)  lr 1.00e-03  *
+    epoch   55  train 0.59142 (tc 0.49010 hrr 0.33773)  valid 0.81628 (tc 0.68696 hrr 0.43108)  lr 1.00e-03  *
+    epoch   57  train 0.59199 (tc 0.49110 hrr 0.33630)  valid 0.80357 (tc 0.67633 hrr 0.42415)  lr 1.00e-03  *
+    epoch   60  train 0.58367 (tc 0.48319 hrr 0.33494)  valid 0.80986 (tc 0.68070 hrr 0.43054)  lr 1.00e-03
+    epoch   61  train 0.57849 (tc 0.47877 hrr 0.33241)  valid 0.80150 (tc 0.67347 hrr 0.42677)  lr 1.00e-03  *
+    epoch   62  train 0.57387 (tc 0.47557 hrr 0.32766)  valid 0.79690 (tc 0.66668 hrr 0.43405)  lr 1.00e-03  *
+    epoch   63  train 0.57238 (tc 0.47416 hrr 0.32738)  valid 0.79060 (tc 0.66353 hrr 0.42357)  lr 1.00e-03  *
+    epoch   66  train 0.56623 (tc 0.46888 hrr 0.32452)  valid 0.79042 (tc 0.66439 hrr 0.42010)  lr 1.00e-03  *
+    epoch   70  train 0.56478 (tc 0.46855 hrr 0.32076)  valid 0.78151 (tc 0.65757 hrr 0.41314)  lr 1.00e-03  *
+    epoch   76  train 0.55459 (tc 0.46032 hrr 0.31423)  valid 0.77489 (tc 0.65067 hrr 0.41406)  lr 1.00e-03  *
+    epoch   79  train 0.55109 (tc 0.45733 hrr 0.31255)  valid 0.77469 (tc 0.64837 hrr 0.42108)  lr 1.00e-03  *
+    epoch   80  train 0.54675 (tc 0.45354 hrr 0.31070)  valid 0.76541 (tc 0.64107 hrr 0.41446)  lr 1.00e-03  *
+    epoch   81  train 0.54513 (tc 0.45204 hrr 0.31032)  valid 0.76427 (tc 0.64416 hrr 0.40036)  lr 1.00e-03  *
+    epoch   87  train 0.54902 (tc 0.45604 hrr 0.30995)  valid 0.75002 (tc 0.63109 hrr 0.39642)  lr 1.00e-03  *
+    epoch   90  train 0.54811 (tc 0.45523 hrr 0.30960)  valid 0.75510 (tc 0.63241 hrr 0.40899)  lr 1.00e-03
+    epoch  100  train 0.53786 (tc 0.44710 hrr 0.30253)  valid 0.77957 (tc 0.65668 hrr 0.40963)  lr 1.00e-03
+    epoch  105  train 0.52678 (tc 0.43834 hrr 0.29482)  valid 0.74750 (tc 0.62818 hrr 0.39775)  lr 5.00e-04  *
+    epoch  106  train 0.52741 (tc 0.43917 hrr 0.29413)  valid 0.74466 (tc 0.62518 hrr 0.39825)  lr 5.00e-04  *
+    epoch  110  train 0.52209 (tc 0.43456 hrr 0.29178)  valid 0.73727 (tc 0.61975 hrr 0.39174)  lr 5.00e-04  *
+    epoch  111  train 0.52124 (tc 0.43424 hrr 0.29000)  valid 0.73135 (tc 0.61466 hrr 0.38896)  lr 5.00e-04  *
+    epoch  120  train 0.50964 (tc 0.42420 hrr 0.28481)  valid 0.72903 (tc 0.61108 hrr 0.39315)  lr 5.00e-04  *
+    epoch  121  train 0.50939 (tc 0.42388 hrr 0.28503)  valid 0.72865 (tc 0.61079 hrr 0.39287)  lr 5.00e-04  *
+    epoch  126  train 0.50591 (tc 0.42101 hrr 0.28300)  valid 0.72530 (tc 0.60943 hrr 0.38622)  lr 5.00e-04  *
+    epoch  128  train 0.50362 (tc 0.41907 hrr 0.28185)  valid 0.72389 (tc 0.60906 hrr 0.38277)  lr 5.00e-04  *
+    epoch  130  train 0.50154 (tc 0.41730 hrr 0.28077)  valid 0.73325 (tc 0.61655 hrr 0.38901)  lr 5.00e-04
+    epoch  132  train 0.50039 (tc 0.41641 hrr 0.27994)  valid 0.72155 (tc 0.60632 hrr 0.38413)  lr 5.00e-04  *
+    epoch  135  train 0.49839 (tc 0.41473 hrr 0.27886)  valid 0.71660 (tc 0.60242 hrr 0.38062)  lr 5.00e-04  *
+    epoch  138  train 0.49781 (tc 0.41430 hrr 0.27839)  valid 0.71523 (tc 0.60104 hrr 0.38064)  lr 5.00e-04  *
+    epoch  139  train 0.49755 (tc 0.41403 hrr 0.27840)  valid 0.71374 (tc 0.59931 hrr 0.38143)  lr 5.00e-04  *
+    epoch  140  train 0.49688 (tc 0.41354 hrr 0.27780)  valid 0.72371 (tc 0.61025 hrr 0.37820)  lr 5.00e-04
+    epoch  141  train 0.49634 (tc 0.41300 hrr 0.27780)  valid 0.71362 (tc 0.60214 hrr 0.37162)  lr 5.00e-04  *
+    epoch  142  train 0.49604 (tc 0.41271 hrr 0.27776)  valid 0.71312 (tc 0.60198 hrr 0.37048)  lr 5.00e-04  *
+    epoch  150  train 0.49221 (tc 0.40976 hrr 0.27484)  valid 0.71206 (tc 0.60278 hrr 0.36424)  lr 5.00e-04  *
+    epoch  151  train 0.49279 (tc 0.41022 hrr 0.27521)  valid 0.70841 (tc 0.59911 hrr 0.36431)  lr 5.00e-04  *
+    epoch  152  train 0.49399 (tc 0.41126 hrr 0.27576)  valid 0.69800 (tc 0.58981 hrr 0.36061)  lr 5.00e-04  *
+    epoch  160  train 0.48522 (tc 0.40406 hrr 0.27051)  valid 0.70695 (tc 0.59950 hrr 0.35814)  lr 5.00e-04
+    epoch  168  train 0.48335 (tc 0.40258 hrr 0.26924)  valid 0.69611 (tc 0.58979 hrr 0.35440)  lr 5.00e-04  *
+    epoch  169  train 0.48472 (tc 0.40406 hrr 0.26887)  valid 0.68687 (tc 0.58212 hrr 0.34919)  lr 5.00e-04  *
+    epoch  170  train 0.48347 (tc 0.40302 hrr 0.26817)  valid 0.71049 (tc 0.60183 hrr 0.36222)  lr 5.00e-04
+    epoch  180  train 0.47455 (tc 0.39546 hrr 0.26364)  valid 0.69521 (tc 0.58933 hrr 0.35292)  lr 5.00e-04
+    epoch  182  train 0.47705 (tc 0.39771 hrr 0.26448)  valid 0.67912 (tc 0.57575 hrr 0.34458)  lr 5.00e-04  *
+    epoch  190  train 0.47121 (tc 0.39299 hrr 0.26073)  valid 0.71256 (tc 0.60530 hrr 0.35756)  lr 5.00e-04
+    epoch  200  train 0.46715 (tc 0.38987 hrr 0.25760)  valid 0.70396 (tc 0.59880 hrr 0.35053)  lr 2.50e-04
+    epoch  210  train 0.46385 (tc 0.38724 hrr 0.25537)  valid 0.70891 (tc 0.60386 hrr 0.35017)  lr 2.50e-04
+    epoch  220  train 0.46201 (tc 0.38568 hrr 0.25444)  valid 0.69707 (tc 0.59466 hrr 0.34138)  lr 1.25e-04
+    epoch  230  train 0.46022 (tc 0.38424 hrr 0.25324)  valid 0.69650 (tc 0.59407 hrr 0.34144)  lr 6.25e-05
+    epoch  240  train 0.45929 (tc 0.38346 hrr 0.25274)  valid 0.69200 (tc 0.58975 hrr 0.34086)  lr 6.25e-05
+    early stop at epoch 242 (best 0.67912 @ 182)
+    saved models_part1_mlp_r2\part1_member0.pt  (0.9 min)
+
+  === member 2/3 (seed 43) ===
+    [sentinel] weights moved after epoch 0: |dW| = 3.2932e+00
+    epoch    0  train 1.80592 (tc 1.45425 hrr 1.17224)  valid 1.50040 (tc 1.27839 hrr 0.74003)  lr 1.00e-03  *
+    epoch    1  train 1.30604 (tc 1.11864 hrr 0.62468)  valid 1.37596 (tc 1.17918 hrr 0.65593)  lr 1.00e-03  *
+    epoch    2  train 1.18394 (tc 1.01863 hrr 0.55105)  valid 1.21929 (tc 1.03837 hrr 0.60305)  lr 1.00e-03  *
+    epoch    3  train 1.03720 (tc 0.88120 hrr 0.52000)  valid 1.14920 (tc 0.97309 hrr 0.58701)  lr 1.00e-03  *
+    epoch    4  train 0.97629 (tc 0.82551 hrr 0.50260)  valid 1.10787 (tc 0.93763 hrr 0.56748)  lr 1.00e-03  *
+    epoch    5  train 0.93480 (tc 0.78969 hrr 0.48372)  valid 1.08016 (tc 0.91172 hrr 0.56147)  lr 1.00e-03  *
+    epoch    6  train 0.90468 (tc 0.76281 hrr 0.47288)  valid 1.04958 (tc 0.88595 hrr 0.54545)  lr 1.00e-03  *
+    epoch    7  train 0.88315 (tc 0.74492 hrr 0.46078)  valid 1.03409 (tc 0.86898 hrr 0.55036)  lr 1.00e-03  *
+    epoch    8  train 0.86669 (tc 0.72915 hrr 0.45847)  valid 1.02272 (tc 0.86208 hrr 0.53546)  lr 1.00e-03  *
+    epoch    9  train 0.84158 (tc 0.70727 hrr 0.44771)  valid 1.02182 (tc 0.86151 hrr 0.53437)  lr 1.00e-03  *
+    epoch   10  train 0.82297 (tc 0.68784 hrr 0.45044)  valid 0.99196 (tc 0.83315 hrr 0.52937)  lr 1.00e-03  *
+    epoch   11  train 0.80956 (tc 0.67602 hrr 0.44514)  valid 0.98501 (tc 0.82512 hrr 0.53297)  lr 1.00e-03  *
+    epoch   12  train 0.78742 (tc 0.65668 hrr 0.43580)  valid 0.95525 (tc 0.79962 hrr 0.51877)  lr 1.00e-03  *
+    epoch   13  train 0.77557 (tc 0.64574 hrr 0.43278)  valid 0.94732 (tc 0.79289 hrr 0.51478)  lr 1.00e-03  *
+    epoch   15  train 0.75201 (tc 0.62463 hrr 0.42459)  valid 0.93791 (tc 0.78664 hrr 0.50423)  lr 1.00e-03  *
+    epoch   16  train 0.74036 (tc 0.61507 hrr 0.41765)  valid 0.93303 (tc 0.77826 hrr 0.51588)  lr 1.00e-03  *
+    epoch   17  train 0.72903 (tc 0.60519 hrr 0.41280)  valid 0.90851 (tc 0.75857 hrr 0.49981)  lr 1.00e-03  *
+    epoch   18  train 0.72295 (tc 0.59917 hrr 0.41259)  valid 0.89680 (tc 0.74864 hrr 0.49384)  lr 1.00e-03  *
+    epoch   19  train 0.72150 (tc 0.59823 hrr 0.41091)  valid 0.89299 (tc 0.74552 hrr 0.49158)  lr 1.00e-03  *
+    epoch   20  train 0.70552 (tc 0.58574 hrr 0.39928)  valid 0.88356 (tc 0.73734 hrr 0.48740)  lr 1.00e-03  *
+    epoch   23  train 0.69408 (tc 0.57763 hrr 0.38816)  valid 0.87638 (tc 0.73184 hrr 0.48182)  lr 1.00e-03  *
+    epoch   24  train 0.69233 (tc 0.57610 hrr 0.38743)  valid 0.86933 (tc 0.72820 hrr 0.47043)  lr 1.00e-03  *
+    epoch   26  train 0.68030 (tc 0.56545 hrr 0.38281)  valid 0.85288 (tc 0.71655 hrr 0.45444)  lr 1.00e-03  *
+    epoch   30  train 0.65951 (tc 0.54872 hrr 0.36928)  valid 0.85899 (tc 0.72197 hrr 0.45672)  lr 1.00e-03
+    epoch   31  train 0.65661 (tc 0.54714 hrr 0.36491)  valid 0.85228 (tc 0.71775 hrr 0.44841)  lr 1.00e-03  *
+    epoch   36  train 0.64356 (tc 0.53600 hrr 0.35854)  valid 0.83046 (tc 0.69838 hrr 0.44025)  lr 1.00e-03  *
+    epoch   40  train 0.62855 (tc 0.52207 hrr 0.35495)  valid 0.84218 (tc 0.71039 hrr 0.43931)  lr 1.00e-03
+    epoch   43  train 0.61458 (tc 0.51081 hrr 0.34587)  valid 0.82484 (tc 0.69453 hrr 0.43438)  lr 1.00e-03  *
+    epoch   49  train 0.60509 (tc 0.50272 hrr 0.34125)  valid 0.82078 (tc 0.69030 hrr 0.43492)  lr 1.00e-03  *
+    epoch   50  train 0.61311 (tc 0.51015 hrr 0.34320)  valid 0.83812 (tc 0.70565 hrr 0.44156)  lr 1.00e-03
+    epoch   52  train 0.60578 (tc 0.50294 hrr 0.34280)  valid 0.81891 (tc 0.69057 hrr 0.42779)  lr 1.00e-03  *
+    epoch   55  train 0.61045 (tc 0.50744 hrr 0.34335)  valid 0.81374 (tc 0.68519 hrr 0.42851)  lr 1.00e-03  *
+    epoch   59  train 0.58264 (tc 0.48380 hrr 0.32947)  valid 0.81202 (tc 0.68509 hrr 0.42311)  lr 1.00e-03  *
+    epoch   60  train 0.58467 (tc 0.48621 hrr 0.32817)  valid 0.80043 (tc 0.67671 hrr 0.41240)  lr 1.00e-03  *
+    epoch   63  train 0.59263 (tc 0.49357 hrr 0.33019)  valid 0.79113 (tc 0.66809 hrr 0.41011)  lr 1.00e-03  *
+    epoch   65  train 0.57776 (tc 0.47974 hrr 0.32673)  valid 0.78008 (tc 0.65621 hrr 0.41290)  lr 1.00e-03  *
+    epoch   66  train 0.57054 (tc 0.47402 hrr 0.32173)  valid 0.77564 (tc 0.65379 hrr 0.40617)  lr 1.00e-03  *
+    epoch   69  train 0.56591 (tc 0.47060 hrr 0.31772)  valid 0.77299 (tc 0.65368 hrr 0.39771)  lr 1.00e-03  *
+    epoch   70  train 0.56510 (tc 0.47028 hrr 0.31608)  valid 0.77237 (tc 0.65358 hrr 0.39595)  lr 1.00e-03  *
+    epoch   71  train 0.56622 (tc 0.47089 hrr 0.31777)  valid 0.76861 (tc 0.64899 hrr 0.39872)  lr 1.00e-03  *
+    epoch   75  train 0.56468 (tc 0.46880 hrr 0.31960)  valid 0.76196 (tc 0.64163 hrr 0.40112)  lr 1.00e-03  *
+    epoch   80  train 0.56632 (tc 0.46914 hrr 0.32392)  valid 0.76914 (tc 0.64862 hrr 0.40174)  lr 1.00e-03
+    epoch   81  train 0.55370 (tc 0.45963 hrr 0.31356)  valid 0.74839 (tc 0.63043 hrr 0.39319)  lr 1.00e-03  *
+    epoch   82  train 0.54850 (tc 0.45550 hrr 0.31003)  valid 0.73780 (tc 0.62045 hrr 0.39117)  lr 1.00e-03  *
+    epoch   87  train 0.53873 (tc 0.44750 hrr 0.30412)  valid 0.73744 (tc 0.61967 hrr 0.39255)  lr 1.00e-03  *
+    epoch   90  train 0.53296 (tc 0.44301 hrr 0.29983)  valid 0.73795 (tc 0.62208 hrr 0.38624)  lr 1.00e-03
+    epoch   91  train 0.53118 (tc 0.44140 hrr 0.29925)  valid 0.73733 (tc 0.62024 hrr 0.39029)  lr 1.00e-03  *
+    epoch   93  train 0.53141 (tc 0.44218 hrr 0.29745)  valid 0.73318 (tc 0.61752 hrr 0.38551)  lr 1.00e-03  *
+    epoch   95  train 0.53441 (tc 0.44437 hrr 0.30013)  valid 0.72879 (tc 0.61484 hrr 0.37981)  lr 1.00e-03  *
+    epoch  100  train 0.52898 (tc 0.44007 hrr 0.29639)  valid 0.72904 (tc 0.61469 hrr 0.38116)  lr 1.00e-03
+    epoch  101  train 0.52383 (tc 0.43566 hrr 0.29390)  valid 0.71928 (tc 0.60784 hrr 0.37147)  lr 1.00e-03  *
+    epoch  110  train 0.51897 (tc 0.43118 hrr 0.29266)  valid 0.72439 (tc 0.61088 hrr 0.37835)  lr 1.00e-03
+    epoch  113  train 0.50990 (tc 0.42413 hrr 0.28588)  valid 0.71669 (tc 0.60343 hrr 0.37753)  lr 1.00e-03  *
+    epoch  114  train 0.50771 (tc 0.42241 hrr 0.28436)  valid 0.71481 (tc 0.60252 hrr 0.37430)  lr 1.00e-03  *
+    epoch  118  train 0.51260 (tc 0.42682 hrr 0.28591)  valid 0.70402 (tc 0.59430 hrr 0.36572)  lr 1.00e-03  *
+    epoch  120  train 0.50620 (tc 0.42167 hrr 0.28177)  valid 0.71421 (tc 0.60203 hrr 0.37393)  lr 1.00e-03
+    epoch  122  train 0.50367 (tc 0.41952 hrr 0.28051)  valid 0.70163 (tc 0.59290 hrr 0.36242)  lr 1.00e-03  *
+    epoch  130  train 0.51072 (tc 0.42324 hrr 0.29159)  valid 0.71369 (tc 0.60008 hrr 0.37867)  lr 1.00e-03
+    epoch  134  train 0.50289 (tc 0.41817 hrr 0.28240)  valid 0.70124 (tc 0.58899 hrr 0.37417)  lr 1.00e-03  *
+    epoch  135  train 0.49925 (tc 0.41544 hrr 0.27938)  valid 0.69859 (tc 0.58976 hrr 0.36275)  lr 1.00e-03  *
+    epoch  138  train 0.49518 (tc 0.41221 hrr 0.27656)  valid 0.69564 (tc 0.58274 hrr 0.37634)  lr 1.00e-03  *
+    epoch  139  train 0.49277 (tc 0.41020 hrr 0.27524)  valid 0.68870 (tc 0.57771 hrr 0.36995)  lr 1.00e-03  *
+    epoch  140  train 0.49180 (tc 0.40953 hrr 0.27423)  valid 0.69343 (tc 0.58301 hrr 0.36807)  lr 1.00e-03
+    epoch  142  train 0.49077 (tc 0.40862 hrr 0.27386)  valid 0.68592 (tc 0.57756 hrr 0.36120)  lr 1.00e-03  *
+    epoch  148  train 0.49049 (tc 0.40860 hrr 0.27297)  valid 0.68178 (tc 0.57553 hrr 0.35416)  lr 1.00e-03  *
+    epoch  149  train 0.48705 (tc 0.40592 hrr 0.27042)  valid 0.67896 (tc 0.57250 hrr 0.35485)  lr 1.00e-03  *
+    epoch  150  train 0.49040 (tc 0.40884 hrr 0.27186)  valid 0.70740 (tc 0.59730 hrr 0.36698)  lr 1.00e-03
+    epoch  156  train 0.48745 (tc 0.40688 hrr 0.26857)  valid 0.67751 (tc 0.57335 hrr 0.34718)  lr 1.00e-03  *
+    epoch  159  train 0.48113 (tc 0.40177 hrr 0.26454)  valid 0.67667 (tc 0.57136 hrr 0.35104)  lr 1.00e-03  *
+    epoch  160  train 0.47971 (tc 0.40046 hrr 0.26416)  valid 0.68147 (tc 0.57518 hrr 0.35430)  lr 1.00e-03
+    epoch  170  train 0.47499 (tc 0.39716 hrr 0.25945)  valid 0.67636 (tc 0.57082 hrr 0.35179)  lr 1.00e-03  *
+    epoch  173  train 0.47689 (tc 0.39878 hrr 0.26039)  valid 0.67490 (tc 0.56964 hrr 0.35089)  lr 1.00e-03  *
+    epoch  180  train 0.47927 (tc 0.40157 hrr 0.25901)  valid 0.68473 (tc 0.57690 hrr 0.35941)  lr 1.00e-03
+    epoch  190  train 0.46830 (tc 0.39281 hrr 0.25163)  valid 0.67319 (tc 0.56740 hrr 0.35264)  lr 5.00e-04  *
+    epoch  191  train 0.46678 (tc 0.39152 hrr 0.25088)  valid 0.67238 (tc 0.56688 hrr 0.35170)  lr 5.00e-04  *
+    epoch  192  train 0.46553 (tc 0.39052 hrr 0.25000)  valid 0.66442 (tc 0.56151 hrr 0.34304)  lr 5.00e-04  *
+    epoch  200  train 0.46164 (tc 0.38740 hrr 0.24745)  valid 0.66287 (tc 0.55951 hrr 0.34455)  lr 5.00e-04  *
+    epoch  210  train 0.46120 (tc 0.38747 hrr 0.24577)  valid 0.67457 (tc 0.57112 hrr 0.34483)  lr 5.00e-04
+    epoch  217  train 0.45837 (tc 0.38514 hrr 0.24409)  valid 0.66040 (tc 0.55915 hrr 0.33750)  lr 2.50e-04  *
+    epoch  218  train 0.45762 (tc 0.38457 hrr 0.24350)  valid 0.65921 (tc 0.55751 hrr 0.33898)  lr 2.50e-04  *
+    epoch  219  train 0.45708 (tc 0.38412 hrr 0.24319)  valid 0.65888 (tc 0.55794 hrr 0.33649)  lr 2.50e-04  *
+    epoch  220  train 0.45669 (tc 0.38386 hrr 0.24276)  valid 0.66239 (tc 0.56168 hrr 0.33570)  lr 2.50e-04
+    epoch  230  train 0.45503 (tc 0.38256 hrr 0.24154)  valid 0.66374 (tc 0.56219 hrr 0.33851)  lr 2.50e-04
+    epoch  237  train 0.45475 (tc 0.38249 hrr 0.24088)  valid 0.65762 (tc 0.55637 hrr 0.33750)  lr 1.25e-04  *
+    epoch  238  train 0.45434 (tc 0.38217 hrr 0.24057)  valid 0.65617 (tc 0.55516 hrr 0.33670)  lr 1.25e-04  *
+    epoch  240  train 0.45428 (tc 0.38213 hrr 0.24052)  valid 0.66129 (tc 0.55910 hrr 0.34064)  lr 1.25e-04
+    epoch  250  train 0.45338 (tc 0.38129 hrr 0.24032)  valid 0.66629 (tc 0.56359 hrr 0.34230)  lr 1.25e-04
+    epoch  260  train 0.45227 (tc 0.38034 hrr 0.23975)  valid 0.66476 (tc 0.56278 hrr 0.33993)  lr 6.25e-05
+    epoch  270  train 0.45177 (tc 0.38000 hrr 0.23924)  valid 0.66600 (tc 0.56403 hrr 0.33989)  lr 3.13e-05
+    epoch  280  train 0.45160 (tc 0.37981 hrr 0.23928)  valid 0.66594 (tc 0.56401 hrr 0.33976)  lr 3.13e-05
+    epoch  290  train 0.45133 (tc 0.37962 hrr 0.23904)  valid 0.66541 (tc 0.56376 hrr 0.33881)  lr 1.56e-05
+    early stop at epoch 298 (best 0.65617 @ 238)
+    saved models_part1_mlp_r2\part1_member1.pt  (1.9 min)
+
+  === member 3/3 (seed 44) ===
+    [sentinel] weights moved after epoch 0: |dW| = 3.2910e+00
+    epoch    0  train 1.87981 (tc 1.48632 hrr 1.31164)  valid 1.51559 (tc 1.24869 hrr 0.88966)  lr 1.00e-03  *
+    epoch    1  train 1.27451 (tc 1.07829 hrr 0.65408)  valid 1.32769 (tc 1.13899 hrr 0.62897)  lr 1.00e-03  *
+    epoch    2  train 1.15083 (tc 0.98411 hrr 0.55573)  valid 1.25033 (tc 1.06608 hrr 0.61417)  lr 1.00e-03  *
+    epoch    3  train 1.06903 (tc 0.91081 hrr 0.52738)  valid 1.18220 (tc 1.00329 hrr 0.59636)  lr 1.00e-03  *
+    epoch    4  train 1.00802 (tc 0.85541 hrr 0.50872)  valid 1.12403 (tc 0.95107 hrr 0.57653)  lr 1.00e-03  *
+    epoch    5  train 0.95145 (tc 0.80396 hrr 0.49162)  valid 1.09495 (tc 0.92589 hrr 0.56352)  lr 1.00e-03  *
+    epoch    6  train 0.90619 (tc 0.76152 hrr 0.48221)  valid 1.05705 (tc 0.88931 hrr 0.55913)  lr 1.00e-03  *
+    epoch    7  train 0.86926 (tc 0.72632 hrr 0.47646)  valid 1.04275 (tc 0.87525 hrr 0.55834)  lr 1.00e-03  *
+    epoch    8  train 0.84381 (tc 0.70182 hrr 0.47330)  valid 1.02484 (tc 0.85599 hrr 0.56282)  lr 1.00e-03  *
+    epoch    9  train 0.82678 (tc 0.68479 hrr 0.47330)  valid 0.97998 (tc 0.81259 hrr 0.55798)  lr 1.00e-03  *
+    epoch   10  train 0.80527 (tc 0.66594 hrr 0.46443)  valid 0.95984 (tc 0.79404 hrr 0.55267)  lr 1.00e-03  *
+    epoch   12  train 0.78118 (tc 0.64464 hrr 0.45512)  valid 0.95550 (tc 0.78802 hrr 0.55826)  lr 1.00e-03  *
+    epoch   13  train 0.76481 (tc 0.62859 hrr 0.45406)  valid 0.93085 (tc 0.76892 hrr 0.53976)  lr 1.00e-03  *
+    epoch   17  train 0.73821 (tc 0.60866 hrr 0.43183)  valid 0.92741 (tc 0.76839 hrr 0.53006)  lr 1.00e-03  *
+    epoch   18  train 0.72907 (tc 0.60101 hrr 0.42688)  valid 0.90800 (tc 0.75054 hrr 0.52485)  lr 1.00e-03  *
+    epoch   20  train 0.71076 (tc 0.58547 hrr 0.41765)  valid 0.90575 (tc 0.75050 hrr 0.51750)  lr 1.00e-03  *
+    epoch   21  train 0.70648 (tc 0.58318 hrr 0.41100)  valid 0.89237 (tc 0.74043 hrr 0.50649)  lr 1.00e-03  *
+    epoch   22  train 0.70334 (tc 0.58095 hrr 0.40796)  valid 0.89201 (tc 0.73987 hrr 0.50714)  lr 1.00e-03  *
+    epoch   23  train 0.69794 (tc 0.57526 hrr 0.40895)  valid 0.88503 (tc 0.73352 hrr 0.50504)  lr 1.00e-03  *
+    epoch   24  train 0.69012 (tc 0.56895 hrr 0.40392)  valid 0.88250 (tc 0.73328 hrr 0.49741)  lr 1.00e-03  *
+    epoch   25  train 0.68650 (tc 0.56650 hrr 0.40000)  valid 0.87910 (tc 0.73226 hrr 0.48946)  lr 1.00e-03  *
+    epoch   26  train 0.68141 (tc 0.56236 hrr 0.39683)  valid 0.87761 (tc 0.72896 hrr 0.49550)  lr 1.00e-03  *
+    epoch   28  train 0.67270 (tc 0.55525 hrr 0.39147)  valid 0.86857 (tc 0.72278 hrr 0.48596)  lr 1.00e-03  *
+    epoch   30  train 0.67685 (tc 0.55978 hrr 0.39024)  valid 0.87877 (tc 0.73248 hrr 0.48764)  lr 1.00e-03
+    epoch   31  train 0.67471 (tc 0.55879 hrr 0.38639)  valid 0.86790 (tc 0.72438 hrr 0.47841)  lr 1.00e-03  *
+    epoch   32  train 0.67212 (tc 0.55598 hrr 0.38711)  valid 0.86732 (tc 0.72084 hrr 0.48824)  lr 1.00e-03  *
+    epoch   33  train 0.66444 (tc 0.55090 hrr 0.37847)  valid 0.85805 (tc 0.71488 hrr 0.47725)  lr 1.00e-03  *
+    epoch   35  train 0.65117 (tc 0.53902 hrr 0.37381)  valid 0.84880 (tc 0.70988 hrr 0.46306)  lr 1.00e-03  *
+    epoch   36  train 0.64503 (tc 0.53391 hrr 0.37040)  valid 0.84693 (tc 0.70526 hrr 0.47226)  lr 1.00e-03  *
+    epoch   38  train 0.63960 (tc 0.52972 hrr 0.36627)  valid 0.84325 (tc 0.70351 hrr 0.46582)  lr 1.00e-03  *
+    epoch   40  train 0.63135 (tc 0.52278 hrr 0.36190)  valid 0.85803 (tc 0.71855 hrr 0.46494)  lr 1.00e-03
+    epoch   43  train 0.62257 (tc 0.51565 hrr 0.35638)  valid 0.84196 (tc 0.70446 hrr 0.45835)  lr 1.00e-03  *
+    epoch   44  train 0.62333 (tc 0.51569 hrr 0.35880)  valid 0.83257 (tc 0.69826 hrr 0.44770)  lr 1.00e-03  *
+    epoch   46  train 0.61536 (tc 0.50980 hrr 0.35185)  valid 0.81698 (tc 0.68244 hrr 0.44846)  lr 1.00e-03  *
+    epoch   50  train 0.60588 (tc 0.50315 hrr 0.34245)  valid 0.81684 (tc 0.68490 hrr 0.43981)  lr 1.00e-03  *
+    epoch   51  train 0.59833 (tc 0.49584 hrr 0.34161)  valid 0.80787 (tc 0.67716 hrr 0.43573)  lr 1.00e-03  *
+    epoch   52  train 0.59768 (tc 0.49624 hrr 0.33812)  valid 0.79858 (tc 0.66968 hrr 0.42966)  lr 1.00e-03  *
+    epoch   57  train 0.59524 (tc 0.49481 hrr 0.33475)  valid 0.79810 (tc 0.67009 hrr 0.42671)  lr 1.00e-03  *
+    epoch   58  train 0.59414 (tc 0.49486 hrr 0.33091)  valid 0.79150 (tc 0.66538 hrr 0.42041)  lr 1.00e-03  *
+    epoch   59  train 0.58612 (tc 0.48680 hrr 0.33108)  valid 0.78682 (tc 0.65958 hrr 0.42413)  lr 1.00e-03  *
+    epoch   60  train 0.58102 (tc 0.48237 hrr 0.32884)  valid 0.79866 (tc 0.67153 hrr 0.42377)  lr 1.00e-03
+    epoch   63  train 0.57599 (tc 0.47909 hrr 0.32302)  valid 0.78679 (tc 0.66148 hrr 0.41770)  lr 1.00e-03  *
+    epoch   64  train 0.57031 (tc 0.47401 hrr 0.32099)  valid 0.76814 (tc 0.64627 hrr 0.40624)  lr 1.00e-03  *
+    epoch   70  train 0.56882 (tc 0.47398 hrr 0.31615)  valid 0.77716 (tc 0.65141 hrr 0.41918)  lr 1.00e-03
+    epoch   79  train 0.55891 (tc 0.46546 hrr 0.31150)  valid 0.75780 (tc 0.63708 hrr 0.40241)  lr 1.00e-03  *
+    epoch   80  train 0.55373 (tc 0.46154 hrr 0.30727)  valid 0.77355 (tc 0.65119 hrr 0.40786)  lr 1.00e-03
+    epoch   81  train 0.55120 (tc 0.45988 hrr 0.30440)  valid 0.75777 (tc 0.63916 hrr 0.39536)  lr 1.00e-03  *
+    epoch   82  train 0.54532 (tc 0.45548 hrr 0.29948)  valid 0.75179 (tc 0.63261 hrr 0.39727)  lr 1.00e-03  *
+    epoch   85  train 0.54575 (tc 0.45670 hrr 0.29684)  valid 0.74894 (tc 0.63321 hrr 0.38578)  lr 1.00e-03  *
+    epoch   86  train 0.54586 (tc 0.45604 hrr 0.29939)  valid 0.74727 (tc 0.62979 hrr 0.39157)  lr 1.00e-03  *
+    epoch   90  train 0.53886 (tc 0.45133 hrr 0.29178)  valid 0.74690 (tc 0.62925 hrr 0.39216)  lr 1.00e-03  *
+    epoch   91  train 0.53703 (tc 0.45002 hrr 0.29005)  valid 0.74208 (tc 0.62696 hrr 0.38374)  lr 1.00e-03  *
+    epoch   94  train 0.53216 (tc 0.44614 hrr 0.28675)  valid 0.74113 (tc 0.62734 hrr 0.37931)  lr 1.00e-03  *
+    epoch   95  train 0.52972 (tc 0.44418 hrr 0.28514)  valid 0.73856 (tc 0.62543 hrr 0.37711)  lr 1.00e-03  *
+    epoch   96  train 0.53419 (tc 0.44823 hrr 0.28652)  valid 0.73711 (tc 0.62505 hrr 0.37356)  lr 1.00e-03  *
+    epoch  100  train 0.53016 (tc 0.44444 hrr 0.28573)  valid 0.73395 (tc 0.62046 hrr 0.37827)  lr 1.00e-03  *
+    epoch  102  train 0.52175 (tc 0.43741 hrr 0.28115)  valid 0.72116 (tc 0.61096 hrr 0.36734)  lr 1.00e-03  *
+    epoch  106  train 0.51835 (tc 0.43469 hrr 0.27888)  valid 0.71317 (tc 0.60598 hrr 0.35730)  lr 1.00e-03  *
+    epoch  110  train 0.51469 (tc 0.43197 hrr 0.27571)  valid 0.71933 (tc 0.61090 hrr 0.36143)  lr 1.00e-03
+    epoch  113  train 0.50723 (tc 0.42616 hrr 0.27024)  valid 0.70966 (tc 0.60219 hrr 0.35822)  lr 1.00e-03  *
+    epoch  118  train 0.51332 (tc 0.43205 hrr 0.27090)  valid 0.70306 (tc 0.59420 hrr 0.36286)  lr 1.00e-03  *
+    epoch  120  train 0.51259 (tc 0.43145 hrr 0.27047)  valid 0.71152 (tc 0.60142 hrr 0.36700)  lr 1.00e-03
+    epoch  128  train 0.50422 (tc 0.42428 hrr 0.26644)  valid 0.70194 (tc 0.59456 hrr 0.35791)  lr 1.00e-03  *
+    epoch  129  train 0.50038 (tc 0.42167 hrr 0.26236)  valid 0.69874 (tc 0.59271 hrr 0.35346)  lr 1.00e-03  *
+    epoch  130  train 0.49776 (tc 0.41924 hrr 0.26176)  valid 0.70754 (tc 0.59886 hrr 0.36230)  lr 1.00e-03
+    epoch  131  train 0.49496 (tc 0.41708 hrr 0.25960)  valid 0.69843 (tc 0.59134 hrr 0.35697)  lr 1.00e-03  *
+    epoch  132  train 0.49197 (tc 0.41494 hrr 0.25676)  valid 0.69214 (tc 0.58638 hrr 0.35254)  lr 1.00e-03  *
+    epoch  133  train 0.49045 (tc 0.41388 hrr 0.25524)  valid 0.68967 (tc 0.58606 hrr 0.34538)  lr 1.00e-03  *
+    epoch  136  train 0.49177 (tc 0.41559 hrr 0.25395)  valid 0.68339 (tc 0.58297 hrr 0.33474)  lr 1.00e-03  *
+    epoch  138  train 0.48571 (tc 0.41046 hrr 0.25084)  valid 0.67929 (tc 0.58098 hrr 0.32768)  lr 1.00e-03  *
+    epoch  140  train 0.48304 (tc 0.40857 hrr 0.24823)  valid 0.68656 (tc 0.58484 hrr 0.33909)  lr 1.00e-03
+    epoch  148  train 0.48769 (tc 0.41346 hrr 0.24744)  valid 0.67780 (tc 0.58010 hrr 0.32566)  lr 1.00e-03  *
+    epoch  150  train 0.48971 (tc 0.41352 hrr 0.25395)  valid 0.68121 (tc 0.58087 hrr 0.33447)  lr 1.00e-03
+    epoch  154  train 0.47680 (tc 0.40442 hrr 0.24127)  valid 0.67695 (tc 0.57915 hrr 0.32598)  lr 1.00e-03  *
+    epoch  160  train 0.47482 (tc 0.40364 hrr 0.23726)  valid 0.68478 (tc 0.58190 hrr 0.34291)  lr 1.00e-03
+    epoch  162  train 0.47518 (tc 0.40377 hrr 0.23802)  valid 0.67469 (tc 0.57529 hrr 0.33133)  lr 1.00e-03  *
+    epoch  165  train 0.47435 (tc 0.40300 hrr 0.23783)  valid 0.66832 (tc 0.57136 hrr 0.32319)  lr 1.00e-03  *
+    epoch  170  train 0.46651 (tc 0.39701 hrr 0.23167)  valid 0.67948 (tc 0.57719 hrr 0.34095)  lr 1.00e-03
+    epoch  177  train 0.46467 (tc 0.39608 hrr 0.22861)  valid 0.66762 (tc 0.56740 hrr 0.33407)  lr 1.00e-03  *
+    epoch  180  train 0.46100 (tc 0.39296 hrr 0.22680)  valid 0.66572 (tc 0.56735 hrr 0.32788)  lr 1.00e-03  *
+    epoch  182  train 0.45889 (tc 0.39131 hrr 0.22525)  valid 0.66513 (tc 0.56701 hrr 0.32705)  lr 1.00e-03  *
+    epoch  186  train 0.46262 (tc 0.39516 hrr 0.22489)  valid 0.66506 (tc 0.56760 hrr 0.32487)  lr 1.00e-03  *
+    epoch  188  train 0.45982 (tc 0.39256 hrr 0.22420)  valid 0.66225 (tc 0.56605 hrr 0.32068)  lr 1.00e-03  *
+    epoch  190  train 0.45799 (tc 0.39153 hrr 0.22151)  valid 0.66110 (tc 0.56485 hrr 0.32082)  lr 1.00e-03  *
+    epoch  194  train 0.45554 (tc 0.38927 hrr 0.22089)  valid 0.66039 (tc 0.56418 hrr 0.32070)  lr 1.00e-03  *
+    epoch  195  train 0.45460 (tc 0.38860 hrr 0.22000)  valid 0.65692 (tc 0.56213 hrr 0.31596)  lr 1.00e-03  *
+    epoch  196  train 0.45364 (tc 0.38782 hrr 0.21940)  valid 0.65383 (tc 0.55925 hrr 0.31528)  lr 1.00e-03  *
+    epoch  197  train 0.45273 (tc 0.38699 hrr 0.21911)  valid 0.64906 (tc 0.55541 hrr 0.31216)  lr 1.00e-03  *
+    epoch  200  train 0.45129 (tc 0.38564 hrr 0.21882)  valid 0.65682 (tc 0.56112 hrr 0.31901)  lr 1.00e-03
+    epoch  210  train 0.45167 (tc 0.38642 hrr 0.21750)  valid 0.65481 (tc 0.56709 hrr 0.29240)  lr 1.00e-03
+    epoch  220  train 0.44350 (tc 0.37991 hrr 0.21196)  valid 0.65597 (tc 0.55869 hrr 0.32424)  lr 5.00e-04
+    epoch  230  train 0.44359 (tc 0.38039 hrr 0.21065)  valid 0.65306 (tc 0.56030 hrr 0.30921)  lr 2.50e-04
+    epoch  240  train 0.44046 (tc 0.37775 hrr 0.20904)  valid 0.65605 (tc 0.55959 hrr 0.32155)  lr 2.50e-04
+    epoch  250  train 0.43931 (tc 0.37679 hrr 0.20838)  valid 0.65677 (tc 0.55859 hrr 0.32729)  lr 1.25e-04
+    early stop at epoch 257 (best 0.64906 @ 197)
+    saved models_part1_mlp_r2\part1_member2.pt  (1.8 min)
+
+  done. 3 member(s) in models_part1_mlp_r2
+  next: python evaluate_part1.py --model-dir models_part1_mlp_r2

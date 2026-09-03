@@ -1,0 +1,282 @@
+"""Train the surrogate on the Part1 variant corpus.
+
+169 configurations, one simulation each, single mesh (0.10 m), single prescribed
+source (2333.3 kW/m2 -- the BS 8414-1 value). Targets are the 16 external
+thermocouples.
+
+Design decisions worth stating, because each removes a problem the DCLG pipeline
+had to work around:
+
+  splitting     one run per configuration, so a plain configuration-level split
+                is leakage-free by construction. No mesh siblings exist, so the
+                grouped-split correction of the DCLG study does not apply here.
+  scaler        fitted on TRAINING simulations only. The DCLG pipeline fitted it
+                on the whole corpus and had to disclose the contamination; there
+                is no reason to repeat that.
+  anchor        the ignition anchor is a functional of the target, so it is never
+                taken from a held-out simulation. It is predicted from the design
+                vector by a per-core mean fitted on the training split alone,
+                falling back to the global training mean for an unseen core.
+                Within-core spread is 0.02-0.11 against a between-core range of
+                0.21-0.51, so the core label carries most of the timing signal.
+  protocol      12 candidate members -> greedy ensemble of up to 5 by validation
+                R2, matching the DCLG study so the two are comparable.
+
+    python train_part1.py --model-dir models_part1_r1 --seed 42
+"""
+import argparse
+import copy
+import json
+import os
+
+import numpy as np
+import torch
+from sklearn.preprocessing import StandardScaler
+from torch.utils.data import DataLoader, Dataset
+
+import part1_dataset as P1
+from model import MLPAttentionLSTM, count_parameters
+from train import PhysicsLoss, EMA, pooled_r2, LEARNING_RATE, WEIGHT_DECAY, \
+    BATCH_SIZE, NUM_EPOCHS, PATIENCE, N_CANDIDATES, N_KEEP, HIDDEN_SIZE, \
+    EMBEDDING_DIM, N_HEADS, DROPOUT, NUM_KNOTS, EMA_DECAY
+
+N_T = P1.N_TIMESTEPS
+N_S = 16
+T_END = 1800.0
+TRAIN_R, VALID_R = 0.70, 0.15
+
+
+# ----------------------------------------------------------------- anchors
+def anchors_from_targets(outputs):
+    """Normalised peak time of the smoothed Level 1 external mean."""
+    lv1 = outputs[:, :, :8].mean(axis=2)
+    k = np.ones(9) / 9.0
+    sm = np.stack([np.convolve(x, k, mode="same") for x in lv1])
+    return (sm.argmax(axis=1) / (outputs.shape[1] - 1)).astype(np.float32)
+
+
+def fit_anchor_predictor(meta, true_anchors, train_idx):
+    """Per-core mean anchor from the TRAINING split only."""
+    by = {}
+    for i in train_idx:
+        by.setdefault(meta[i]["core"], []).append(float(true_anchors[i]))
+    table = {k: float(np.mean(v)) for k, v in by.items()}
+    fallback = float(np.mean([true_anchors[i] for i in train_idx]))
+    return lambda m: table.get(m["core"], fallback)
+
+
+# ----------------------------------------------------------------- split
+def make_split(meta, seed=0):
+    """Configuration-level split. Deterministic given the seed."""
+    rng = np.random.default_rng(seed)
+    idx = rng.permutation(len(meta))
+    n_tr = int(round(TRAIN_R * len(meta)))
+    n_va = int(round(VALID_R * len(meta)))
+    return idx[:n_tr], idx[n_tr:n_tr + n_va], idx[n_tr + n_va:]
+
+
+# ----------------------------------------------------------------- data
+class Aug(Dataset):
+    """clean / additive noise / same-core mixup, 3x."""
+
+    def __init__(self, params, scaled, anchors, meta, idx, rng):
+        self.p, self.y, self.a = params[idx], scaled[idx], anchors[idx]
+        self.core = [meta[i]["core"] for i in idx]
+        self.rng = rng
+        self.n = len(idx)
+
+    def __len__(self):
+        return self.n * 3
+
+    def __getitem__(self, k):
+        i = k % self.n
+        p, y, a = self.p[i].copy(), self.y[i].copy(), float(self.a[i])
+        if k >= 2 * self.n:                                    # same-core mixup
+            same = [j for j in range(self.n) if self.core[j] == self.core[i] and j != i]
+            if same:
+                j = same[self.rng.integers(len(same))]
+                lam = float(self.rng.uniform(0.6, 0.9))
+                p = lam * p + (1 - lam) * self.p[j]
+                p[0] = self.p[i][0]                            # keep the core index intact
+                y = lam * y + (1 - lam) * self.y[j]
+                a = lam * a + (1 - lam) * float(self.a[j])
+        elif k >= self.n:                                      # additive noise
+            y = y + self.rng.normal(0, 0.03, y.shape).astype(np.float32)
+        return (torch.tensor(p), torch.tensor(y, dtype=torch.float32),
+                torch.ones(N_T), torch.tensor(a, dtype=torch.float32))
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--model-dir", default="models_part1_r1")
+    ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--split-seed", type=int, default=0)
+    a = ap.parse_args()
+
+    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    os.makedirs(a.model_dir, exist_ok=True)
+
+    params, outputs, masks, meta, names = P1.build_dataset()
+    tr, va, te = make_split(meta, a.split_seed)
+    print("  split -> train %d / valid %d / test %d configurations"
+          % (len(tr), len(va), len(te)))
+
+    true_a = anchors_from_targets(outputs)
+    predict_anchor = fit_anchor_predictor(meta, true_a, tr)
+    anchors = np.array([predict_anchor(m) for m in meta], dtype=np.float32)
+    print("  anchor: predicted from the design vector only (per-core training mean);"
+          " MAE vs target-derived = %.4f" % np.abs(anchors - true_a).mean())
+
+    scaler = StandardScaler().fit(outputs[tr].reshape(-1, N_S))
+    scaled = scaler.transform(outputs.reshape(-1, N_S)).reshape(outputs.shape).astype(np.float32)
+    print("  output scaler fitted on %d TRAINING simulations only" % len(tr))
+
+    t_np = np.linspace(0.0, 1.0, N_T, dtype=np.float32)
+    t = torch.tensor(t_np, device=dev)
+    n_cont = params.shape[1] - 1
+
+    def to_dev(idx):
+        return (torch.tensor(params[idx], device=dev),
+                torch.tensor(scaled[idx], device=dev),
+                torch.tensor(anchors[idx], device=dev),
+                outputs[idx])
+
+    vp, vy, vaa, v_actual = to_dev(va)
+    tp, ty, taa, t_actual = to_dev(te)
+    rp, ry, raa, _ = to_dev(tr)
+
+    # init_temp is the per-sensor ambient expressed in SCALED space, matching
+    # train.py's construction -- the t=0 anchoring term compares scaled values.
+    # Moved to the device explicitly: PhysicsLoss keeps init_temp as a plain
+    # attribute rather than a buffer, so .to(device) on the module does not
+    # follow it.
+    init_temp = torch.FloatTensor(
+        scaler.transform(np.full((1, N_S), 18.0, dtype=np.float32))[0]).to(dev)
+    crit = PhysicsLoss(init_temp,
+                       torch.FloatTensor(scaler.mean_),
+                       torch.FloatTensor(scaler.scale_)).to(dev)
+    const_hrr = torch.full((BATCH_SIZE,), 1.0, device=dev)
+
+    members, val_losses, val_stack = [], [], []
+    for m_idx in range(N_CANDIDATES):
+        torch.manual_seed(a.seed + m_idx * 100)
+        rng = np.random.default_rng(a.seed + m_idx * 100)
+        loader = DataLoader(Aug(params, scaled, anchors, meta, tr, rng),
+                            batch_size=BATCH_SIZE, shuffle=True)
+        model = MLPAttentionLSTM(
+            n_timesteps=N_T, n_sensors=N_S, hidden_size=HIDDEN_SIZE,
+            embedding_dim=EMBEDDING_DIM, n_heads=N_HEADS, dropout=DROPOUT,
+            num_knots=NUM_KNOTS, n_continuous=n_cont,
+            n_cladding=len(P1.CORES), hrr_col=P1.HRR_COL).to(dev)
+        model.set_ambient(scaler.mean_, scaler.scale_)
+        if m_idx == 0:
+            print("  Params: %s | n_continuous=%d | targets=%d"
+                  % (f"{count_parameters(model):,}", n_cont, N_S))
+        opt = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE,
+                                weight_decay=WEIGHT_DECAY)
+        sched = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+            opt, T_0=75, T_mult=2, eta_min=1e-5)
+        ema = EMA(model, decay=EMA_DECAY)
+        evalm = MLPAttentionLSTM(
+            n_timesteps=N_T, n_sensors=N_S, hidden_size=HIDDEN_SIZE,
+            embedding_dim=EMBEDDING_DIM, n_heads=N_HEADS, dropout=DROPOUT,
+            num_knots=NUM_KNOTS, n_continuous=n_cont,
+            n_cladding=len(P1.CORES), hrr_col=P1.HRR_COL).to(dev)
+        evalm.set_ambient(scaler.mean_, scaler.scale_)
+
+        best_v, best_s, pat = float("inf"), None, 0
+        for ep in range(1, NUM_EPOCHS + 1):
+            model.train()
+            for p, y, msk, anc in loader:
+                p, y, msk, anc = p.to(dev), y.to(dev), msk.to(dev), anc.to(dev)
+                opt.zero_grad()
+                pred = model(p, t, anc)[0]
+                loss, _ = crit(pred, y, msk, hrr=const_hrr[:p.shape[0]])
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                opt.step()
+                ema.update(model)
+            evalm.load_state_dict(ema.apply_to(model))
+            evalm.eval()
+            with torch.no_grad():
+                vl = crit(evalm(vp, t, vaa)[0], vy,
+                          torch.ones(len(va), N_T, device=dev),
+                          hrr=torch.ones(len(va), device=dev))[0].item()
+            sched.step()
+            if vl < best_v:
+                best_v, best_s, pat = vl, copy.deepcopy(evalm.state_dict()), 0
+            else:
+                pat += 1
+                if pat >= PATIENCE:
+                    break
+        model.load_state_dict(best_s)
+        model.eval()
+        with torch.no_grad():
+            vp_deg = (model(vp, t, vaa)[0].cpu().numpy() * scaler.scale_) + scaler.mean_
+        members.append(model)
+        val_losses.append(best_v)
+        val_stack.append(vp_deg)
+        print("  [M%2d] valid loss=%.4f  valid R2=%.4f  (epoch %d)"
+              % (m_idx + 1, best_v,
+                 pooled_r2(np.array([vp_deg]), [1.0], v_actual), ep))
+
+    val_stack = np.array(val_stack)
+    sel, best = [], -np.inf
+    while len(sel) < N_KEEP:
+        cand, cand_r2 = None, best
+        for c in range(N_CANDIDATES):
+            if c in sel:
+                continue
+            r2 = pooled_r2(val_stack[sel + [c]],
+                           [1.0 / val_losses[i] for i in sel + [c]], v_actual)
+            if r2 > cand_r2:
+                cand, cand_r2 = c, r2
+        if cand is None:
+            break
+        sel.append(cand)
+        best = cand_r2
+        print("  + M%d -> valid R2=%.4f" % (cand + 1, best))
+
+    w = np.array([1.0 / val_losses[i] for i in sel])
+    w = w / w.sum()
+
+    def predict(pp, aa):
+        out = 0
+        with torch.no_grad():
+            for i, wi in zip(sel, w):
+                out = out + wi * ((members[i](pp, t, aa)[0].cpu().numpy()
+                                   * scaler.scale_) + scaler.mean_)
+        return out
+
+    rows = []
+    for lbl, pp, aa, act in (("Train", rp, raa, outputs[tr]),
+                             ("Valid", vp, vaa, v_actual),
+                             ("Test", tp, taa, t_actual)):
+        pr = predict(pp, aa)
+        e = pr - act
+        ss = 1 - (e ** 2).sum() / ((act - act.mean()) ** 2).sum()
+        mape = float(np.mean(np.abs(e[act > 100]) / act[act > 100]) * 100)
+        rows.append((lbl, ss, float(np.sqrt((e ** 2).mean())),
+                     float(np.abs(e).mean()), mape, act.size))
+        print("  %-6s R2=%.4f  RMSE=%.1f  MAE=%.1f  MAPE=%.2f%%"
+              % (lbl, ss, rows[-1][2], rows[-1][3], mape))
+
+    outd = os.path.join(a.model_dir, "outputs")
+    os.makedirs(outd, exist_ok=True)
+    with open(os.path.join(outd, "overall_metrics.csv"), "w") as fh:
+        fh.write("Set,r2,rmse,mae,mape,n\n")
+        for r in rows:
+            fh.write("%s,%r,%r,%r,%r,%d\n" % r)
+    torch.save({"model_states": [members[i].state_dict() for i in sel],
+                "ensemble_weights": w.tolist(), "n_continuous": n_cont,
+                "scaler_mean": scaler.mean_, "scaler_scale": scaler.scale_},
+               os.path.join(a.model_dir, "best_model.pt"))
+    json.dump({"train": [meta[i]["chid"] for i in tr],
+               "valid": [meta[i]["chid"] for i in va],
+               "test": [meta[i]["chid"] for i in te]},
+              open(os.path.join(outd, "split.json"), "w"), indent=1)
+    print("  saved -> %s" % a.model_dir)
+
+
+if __name__ == "__main__":
+    main()

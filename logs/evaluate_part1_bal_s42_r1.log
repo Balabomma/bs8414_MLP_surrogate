@@ -1,0 +1,84 @@
+==============================================================================
+  Part1 surrogate evaluation — models_part1_bal_s42_r1
+  MLP-Attention-LSTM (Part1, KAN ablation control), 3 ensemble member(s), split mode hash
+==============================================================================
+
+  [train]  141 simulations
+    thermocouples   R2  0.7983   RMSE   66.95 degC
+      External_LV1     R2  0.8355   RMSE   69.01 degC
+      External_LV2     R2  0.7290   RMSE   64.82 degC
+    HRR channels
+      HRR              R2  0.9599   RMSE   281.9 kW
+      Q_RADI           R2  0.9574   RMSE    84.4 kW
+      Q_CONV           R2  0.9595   RMSE   201.5 kW
+      Q_COND           R2  0.8863   RMSE     1.6 kW
+      Q_TOTAL          R2  0.1441   RMSE    16.0 kW
+    per geometry
+      baseline             n=17  TC R2  0.7823  RMSE   69.89 degC   HRR R2  0.9855
+      noair                n=18  TC R2  0.8288  RMSE   59.77 degC   HRR R2  0.9730
+      nogap                n=18  TC R2  0.7848  RMSE   69.29 degC   HRR R2  0.9723
+      noair_nogap          n=21  TC R2  0.8217  RMSE   60.80 degC   HRR R2  0.9640
+      nocb                 n=14  TC R2  0.7617  RMSE   75.57 degC   HRR R2  0.9385
+      noair_nocb           n=17  TC R2  0.8325  RMSE   58.10 degC   HRR R2  0.9694
+      nogap_nocb           n=18  TC R2  0.7304  RMSE   81.16 degC   HRR R2  0.9141
+      noair_nogap_nocb     n=18  TC R2  0.8244  RMSE   59.93 degC   HRR R2  0.9744
+    physics                          model      FDS truth
+      sub-ambient points                0              0   PASS
+      worst growth drop degC      -172.90        -440.12   PASS
+      growth 0.1pct step degC      -52.06        -137.10
+      max late rise degC/step       14.69         107.25   PASS
+
+  [valid]  20 simulations
+    thermocouples   R2  0.7173   RMSE   81.80 degC
+      External_LV1     R2  0.7566   RMSE   85.76 degC
+      External_LV2     R2  0.6477   RMSE   77.64 degC
+    HRR channels
+      HRR              R2  0.9153   RMSE   421.6 kW
+      Q_RADI           R2  0.9165   RMSE   122.4 kW
+      Q_CONV           R2  0.9219   RMSE   288.1 kW
+      Q_COND           R2  0.7872   RMSE     2.4 kW
+      Q_TOTAL          R2  0.1508   RMSE    17.2 kW
+    per geometry
+      baseline             n= 4  TC R2  0.7441  RMSE   75.85 degC   HRR R2  0.9279
+      noair                n= 2  TC R2  0.8626  RMSE   51.36 degC   HRR R2  0.9893
+      nogap                n= 3  TC R2  0.6405  RMSE  100.14 degC   HRR R2  0.9320
+      noair_nogap          n= 2  TC R2  0.8526  RMSE   42.54 degC   HRR R2  0.9916
+      nocb                 n= 2  TC R2  0.5216  RMSE  120.35 degC   HRR R2  0.7469
+      noair_nocb           n= 2  TC R2  0.7576  RMSE   55.43 degC   HRR R2  0.9881
+      nogap_nocb           n= 3  TC R2  0.6724  RMSE   90.61 degC   HRR R2  0.9245
+      noair_nogap_nocb     n= 2  TC R2  0.7754  RMSE   77.77 degC   HRR R2  0.9337
+    physics                          model      FDS truth
+      sub-ambient points                0              0   PASS
+      worst growth drop degC      -139.29        -363.72   PASS
+      growth 0.1pct step degC      -63.16        -161.64
+      max late rise degC/step       12.72          67.88   PASS
+
+  [test]  23 simulations
+    thermocouples   R2  0.7353   RMSE   73.48 degC
+      External_LV1     R2  0.7810   RMSE   76.43 degC
+      External_LV2     R2  0.6488   RMSE   70.40 degC
+    HRR channels
+      HRR              R2  0.9383   RMSE   342.1 kW
+      Q_RADI           R2  0.9393   RMSE    98.0 kW
+      Q_CONV           R2  0.9414   RMSE   238.9 kW
+      Q_COND           R2  0.7995   RMSE     2.1 kW
+      Q_TOTAL          R2  0.1371   RMSE    18.5 kW
+    per geometry
+      baseline             n= 4  TC R2  0.8351  RMSE   51.65 degC   HRR R2  0.9897
+      noair                n= 3  TC R2  0.8332  RMSE   52.34 degC   HRR R2  0.9902
+      nogap                n= 1  TC R2  0.6899  RMSE   84.66 degC   HRR R2  0.9832
+      noair_nogap          n= 2  TC R2  0.7962  RMSE   62.99 degC   HRR R2  0.9437
+      nocb                 n= 5  TC R2  0.5568  RMSE  109.18 degC   HRR R2  0.8364
+      noair_nocb           n= 3  TC R2  0.6843  RMSE   80.63 degC   HRR R2  0.9786
+      nogap_nocb           n= 3  TC R2  0.8593  RMSE   45.46 degC   HRR R2  0.9911
+      noair_nogap_nocb     n= 2  TC R2  0.8512  RMSE   49.43 degC   HRR R2  0.9912
+    physics                          model      FDS truth
+      sub-ambient points                0              0   PASS
+      worst growth drop degC       -88.97        -291.74   PASS
+      growth 0.1pct step degC      -46.77        -116.59
+      max late rise degC/step       13.02          93.58   PASS
+
+  combined valid+test TC R2: 0.7263
+  (checkpoint ranking uses this, never test alone)
+
+  written: models_part1_bal_s42_r1\evaluation_part1.json
