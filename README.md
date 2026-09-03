@@ -1,150 +1,113 @@
-# bs8414_MLP_surrogate — MLP ablation control for the KAN surrogate
+# bs8414_MLP_surrogate — MLP-Attention-LSTM thermocouple surrogate
 
-Thermocouple surrogate for the BS 8414-1 facade fire test. This project is a
-**control experiment**, not an independent model line: its only job is to answer
-whether the **KAN B-spline edge activations** in `bs8414_KAN_surrogate` earn their
-place, by running the identical experiment with conventional **MLP** blocks and
-nothing else changed.
+A deep-learning surrogate for the **BS 8414-1** large-scale facade fire test.
+Given a construction build-up, it predicts the external thermocouple response and
+the global energy budget for the full 30-minute test in about a second, where the
+FDS simulation it replaces takes 12–27 hours.
 
-**Two corpora run side by side, and they are not comparable to each other** —
-different targets, different splits, different files. Nothing in the 60-sim
-pipeline was modified when the Part1 pipeline was added.
+**Target:** 16 external thermocouples plus the 5-channel `_hrr.csv` energy budget
+(`HRR, Q_RADI, Q_CONV, Q_COND, Q_TOTAL`) on the 0–1800 s / 10 s grid — 181
+timesteps.
 
-| | 60-sim ablation | Part1 ablation (since 2026-08-18) |
-|---|---|---|
-| Files | `config.py`, `data_loader.py`, `model.py`, `train.py`, `evaluate.py` | the `*_part1.py` set |
-| Data | `bs8414_KAN_surrogate/data/training_data` (read directly, no copy) | `D:\Bs8414_05052026\Part1\_completed` |
-| Target | **24 TCs** × 181 steps, 3 groups | **16 external TCs** × 181 steps, 2 groups **+ 5-channel HRR budget** |
-| Split | 70/15/15 CHID-hash → **40 / 12 / 8** on the clean 60 | hash → **141 / 20 / 23** of 184 usable |
-| Model | `MLPAttentionLSTM`, 853,099 params (KAN: 852,795, +0.04 %) | `Part1MLPAttentionLSTM`, 851,012 params (KAN: 850,765, +0.03 %) |
-| Parity proof | `verify_parity.py` | `verify_parity_part1.py` |
-| Checkpoints | `models_mlp*`, `models_mlp_70_15_15*`, … | `models_part1_*` |
-| Streamlit | — | `app_part1.py` |
+**Input:** a 16-d vector — `[cladding_id, insulation_id, geom_id]` plus 13
+material properties parsed from the FDS deck.
 
 ---
 
-## The one variable
+## The corpus
 
-Every `KANLinear` (learnable B-splines on edges, RBF basis, 8 knots, SiLU
-residual) → **`MLPLinear` = `LayerNorm(W₂·GELU(W₁x + b₁) + b₂)`**.
+The **Part1 geometry-variant corpus**, `D:\Bs8414_05052026\Part1\_completed`. It
+is a geometry sensitivity study, so the design space is:
 
-**Capacity is matched, not reduced.** Each MLP block's hidden width is sized so
-its parameter count equals the KAN block it replaces:
-`h = round((o·i·(K+1) + i) / (i + o + 1))`. `--plain` (or `match_params=False`)
-gives the capacity-free variant (675,960 on the 60-sim corpus) if the "same
-width" ablation is wanted too.
-
-**Disclosed second difference:** the KAN objective's
-`LAMBDA_KAN_REG · kan_regularization(model)` (spline L2 + knot roughness) has no
-MLP counterpart and is **dropped rather than faked** — hence `LAMBDA_REG = 0.0`
-in `model_part1.py`. AdamW weight decay is identical.
-
-`MLPLinear` is imported from this project's `model.py` by `model_part1.py`, not
-re-declared, so the block under test on Part1 is the same one the 60-sim ablation
-used.
-
----
-
-## What is held fixed
-
-### 60-sim ablation
-
-| Component | Source |
+| Axis | Levels |
 |---|---|
-| Dataset | `bs8414_KAN_surrogate/data/training_data` — read directly, no copy (`config.SIMS_DIR`) |
-| Split | deterministic 70/15/15 CHID-hash → **40 / 12 / 8** on the clean 60-sim set |
-| Input vector | 39 features: cladding id, HRR, mesh, 13 material, 20 extended-FDS/derived, D*/dx, physics t_ig, anchor confidence + ignition-anchor scalar |
-| Backbone | TimeEncoding → MultiScaleConv(3/9/27) → 2-layer BiLSTM(96) → 4-head self-attention → 3 grouped decoders + skip |
-| Causal channels | Δ(t−t_anchor), ignition bump, q(t), Q(t), q(t)^(2/3) |
-| Output constraint | hard ambient clamp at 18 °C (per-sensor, scaled space) |
-| Loss | peak-weighted MSE × tail-downweight (τ=1.8) + init + smooth + relative + growth + decay + energy |
-| Optimisation | AdamW 2e-3 / wd 2e-4, cosine warm restarts, EMA 0.999, clip 1.0, ≤1500 epochs, patience 200 |
-| Ensembling | 12 candidates → greedy ≤5 by pooled valid R², inverse-val-loss weights |
-| Evaluation | the KAN project's frozen contract, transplanted verbatim (`evaluate.py`) |
+| Cladding | 12 systems (8 generic + 4 DCLG references) |
+| Insulation | 5 products (MW, MWBC, PF, PIR, WC) |
+| **Geometry** | **8** — the observed combinations of three construction modifiers |
 
-### Part1 ablation
+HRR and mesh size are **constants** here (HRRPUA = 2333.3 kW/m², dx = 0.10 m,
+16 meshes, T_END = 1800 s), so they carry no signal and are not inputs.
 
-Byte-identical to the KAN project (`verify_parity_part1.py` checks SHA-256 *and*
-the arrays built inside each venv): `config_part1.py`, `data_loader_part1.py`,
-`train_part1.py`, `evaluate_part1.py`, `physics_part1.py`, `explain_part1.py`,
-`causal_part1.py`. Plus, inside `model_part1.py`:
+- 186 completed simulations → **184 usable**. Two are excluded by name in
+  `config_part1.EXCLUDED_CHIDS`, each with its reason recorded rather than
+  silently filtered by a shape check.
+- **Hash split: 141 train / 20 valid / 23 test** (`PART1_SPLIT=hash`, default).
+  Every base system appears in training, so this measures whether geometry
+  effects are learned.
+- `PART1_SPLIT=system` keeps all 8 geometry variants of a build-up together, so
+  test systems are genuinely unseen. It answers a different question, and the two
+  are **not comparable** — always state which one a number came from.
+- Scalers are fitted on the **training rows only**.
 
-- conditioning — cladding(12) + insulation(5) + **geometry(8)** embeddings + 13
-  material features, identical embedding widths;
-- backbone — sinusoidal TimeEncoding, `input_proj`, MultiScaleConv (k=3/9/27),
-  2-layer BiLSTM(96), 4-head self-attention + LayerNorm, param→output skips;
-- two thermocouple group decoders + the HRR head, same shapes and dropout;
-- hard ambient / zero-HRR output clamps.
+### Why 16 thermocouples
 
-`MODEL_NAME = "MLP-Attention-LSTM (Part1, KAN ablation control)"`.
+169 of the 186 decks instrument the external face only; the `Insulation_LV2`
+group survives in 17 legacy `DCLG_*` decks alone. Training an insulation head on
+9 % of the corpus would be a fiction, so the target is the 16 external channels
+in two grouped decoders (External LV1, External LV2). This costs the BR 135
+**internal** fire-spread criterion entirely; the **external** criterion is
+unaffected, and the app labels it as such.
 
-**Geometry is a single 8-way embedding** over observed flag combinations (bit 0
-`noair`, bit 1 `nogap`, bit 2 `nocb`), so it learns arbitrary interactions
-between the three modifiers but **cannot extrapolate to a combination absent from
-training**.
+### The HRR head
+
+The burner ramp is identical in every deck, so the run-to-run variation in HRR
+*is* the cladding/insulation combustion contribution — the same physics that
+drives the thermocouples. That is why a second decoder predicts it from the same
+temporal features instead of from a separate model. Weighted by
+`LAMBDA_HRR = 0.3` (env-overridable).
+
+`Q_TOTAL` is an energy-closure **residual** of ~18 kW RMSE against a ~4000 kW
+fire. It sits at numerical noise and is reported as a budget term, not as a
+physical prediction.
 
 ---
 
-> **Five 60-sim helpers are not in this repository** — `validate_physics.py`,
-> `killer_excluded.py`, `bestofn_driver.py`, `dump_per_sensor.py` and
-> `_greedy.py` are kept on the research machine. Everything the ablation
-> argument rests on **is** published: `train.py`, `evaluate.py`,
-> `data_loader.py`, `model.py`, `verify_parity.py`, `compare_with_kan.py` and
-> the manuscript scripts, because those are what make the KAN-vs-MLP comparison
-> checkable by someone else.
+## The model
 
-## Layout
+`model_part1.py` — **MLP-Attention-LSTM**,
+`MODEL_NAME = "MLP-Attention-LSTM (Part1)"`, **851,012 parameters per member**,
+`LAMBDA_REG = 0.0`.
+
+Every edge block in the parameter encoder and the sensor decoders is an
+`MLPLinear` — `LayerNorm(W₂·GELU(W₁x + b₁) + b₂)`, a two-layer bottleneck MLP with
+its own normalisation. The temporal backbone is conventional.
 
 ```
-config.py               60-sim config; DATA_DIR points at the KAN project
-config_part1.py         Part1 corpus contract                       (shared file)
-data_loader.py          transplanted verbatim from the KAN project (SHA-verified)
-data_loader_part1.py    Part1 CHID/material/split logic             (shared file)
-part1_dataset.py        Part1 loader helper: 185 configurations, one mesh, one source
-anchor_features.py      transplanted verbatim
-features_v4.py          transplanted verbatim
-features_v6.py          transplanted verbatim
-sensor_subset.py        restrict the target to the 16 external thermocouples
-hrr_targets.py          total-HRR trajectories, supervise the mediating variable
-model.py                MLP-Attention-LSTM — MLPLinear, the one 60-sim change
-model_part1.py          Part1MLPAttentionLSTM — the one Part1 change
-model_causal.py         causal-structure variant: temperature driven by PREDICTED total HRR
-physics_part1.py        physics gates + optional closure/geometry penalties  (shared)
-train.py                v9 recipe, self-contained
-train_part1.py          Part1 trainer                               (shared file)
-evaluate.py             frozen 60-sim eval contract  -> models_*/outputs/
-evaluate_part1.py       frozen Part1 eval contract                  (shared file)
-validate_physics.py     4 physics-sanity checks, same thresholds as the KAN project
-killer_excluded.py      pooled R² with the LES-chaotic Test_1 HRR1333 family excluded
-verify_parity.py        PROVES 60-sim data/split/feature identity with the KAN project
-verify_parity_part1.py  the same proof for the Part1 shared layer
-bestofn_driver.py       replicates 2 and 3 (retrain-variance population)
-compare_with_kan.py     head-to-head table -> comparison_kan_vs_mlp.md
-compare_splits.py       70/15/15 vs 80/10/10
-grouped_split.py        configuration-grouped split — fixes mesh-sibling leakage
-stratified_split.py     system-stratified configuration-grouped split
-campaign_split.py       leave-one-configuration-out and friends (review-response campaign)
-campaign_hooks.py       two env-guarded dataset hooks for that campaign
-collect_campaign.py / collect_leakctrl.py / collect_regsweep.py   campaign aggregation
-baselines.py            classical baselines on the grouped split
-grid_convergence.py     GCI for the validated FDS configurations
-defective_runs.py       the ten corpus sims whose cladding core does not burn
-threshold_and_monotonicity.py   threshold/timing metrics + monotonicity probe
-tierA_centreline.py     Tier A on centreline-conforming TC positions
-(measured data + origin_figures.py        NOT DISTRIBUTED — see below)
-shap_attribution.py     additive-feature attribution (Cremades et al. 2025)
-explain_part1.py / causal_part1.py     SHAP and causal explainability  (shared files)
-dump_per_sensor*.py / dump_ts_part1.py per-sensor and per-case dumps
-metrics_full_part1.py / time_inference_part1.py
-plotting.py / make_figures.py            figure sets
-app_common_part1.py / app_part1.py / run_app.ps1    the Streamlit app
-app_assets/             part1_materials.json + selected_model.json
-run_*.ps1 / rerun_*.sh  campaign and replicate drivers
+[cladding(12) + insulation(5) + geometry(8) embeddings + 13 material features]
+     -> MLP parameter encoder
+     -> sinusoidal TimeEncoding -> MultiScaleConv (k = 3 / 9 / 27)
+     -> 2-layer BiLSTM(96) -> 4-head self-attention + LayerNorm
+     -> decoders:  External LV1 (8)   External LV2 (8)   HRR (5)
+        with parameter -> output skip connections
 ```
 
-`*.pre-sensors`, `*.pre-part1`, `*.pre-campaign-backup`, `*.pre-causal` and
-`*.claude-overwrote-2026-08-21` files are before-state snapshots of deliberate
-edits. Leave them alone.
+Each block's hidden width is set by `matched_hidden` rather than left free, so
+the parameter budget is a deliberate design point instead of an accident of layer
+sizing. Constructing with `match_params=False` gives the width-free variant.
+
+**Geometry is a single 8-way embedding** over the observed flag combinations
+(bit 0 `noair` — no ventilated cavity; bit 1 `nogap` — closed panel joints;
+bit 2 `nocb` — no cavity barriers; id 0 = the fully-featured baseline). One
+embedding rather than three booleans, so the model can learn an arbitrary
+interaction between the modifiers instead of assuming they compose additively.
+The cost, which constrains what may be asked of it afterwards: **a combination
+absent from training has no embedding row and cannot be predicted at all.**
+
+Physics is enforced **on the output**, not penalised in the loss — soft penalties
+did not hold in earlier work. Thermocouples are clamped at ambient (18 °C) and
+total HRR at zero.
+
+```powershell
+python model_part1.py     # parameter count + forward-pass check
+```
+
+`layers_part1.py` holds the layer primitives — `MLPLinear`, `matched_hidden`,
+`TimeEncoding`, `MultiScaleConv` — vendored verbatim so the pipeline stands
+alone. Verify a block against its origin with:
+
+```powershell
+python -c "import inspect, hashlib, layers_part1 as L; print(hashlib.sha256(inspect.getsource(L.MLPLinear).encode()).hexdigest()[:16])"
+```
 
 ---
 
@@ -156,73 +119,57 @@ Always from this directory, in **this project's own venv**, on the NVIDIA GPU.
 cd D:\VS_projects\bs8414_MLP_surrogate
 .\venv\Scripts\activate
 nvidia-smi                                  # confirm the 4090 is free
-```
-
-### 60-sim ablation
-
-```powershell
-python verify_parity.py                                  # must print PARITY PROVEN
-python -u train.py --model-dir models_mlp   > train_mlp_run1.log 2> train_mlp_run1.err.log
-python evaluate.py         --model-dir models_mlp
-python validate_physics.py --model-dir models_mlp
-python killer_excluded.py  --model-dir models_mlp
-
-python -u bestofn_driver.py                              # replicates r2, r3
-python compare_with_kan.py --bench
-```
-
-### Part1 ablation
-
-```powershell
-python verify_parity_part1.py                            # shared layer identical
+python verify_parity_part1.py               # data layer byte-identical
 python -u train_part1.py --members 3 --seed 61 --model-dir models_part1_bal_s61_r4 `
-       > train_part1_bal_s61_r4.log 2> train_part1_bal_s61_r4.err.log
+       > logs\train_part1_bal_s61_r4.log 2> logs\train_part1_bal_s61_r4.err.log
 python evaluate_part1.py --model-dir models_part1_bal_s61_r4
 ```
-
-`train_part1.py` options — identical to the KAN project's copy:
 
 | Flag | Default | Meaning |
 |---|---|---|
 | `--model-dir` | `models_part1` | output directory — **must not already hold a run** |
 | `--members` | 1 | ensemble members; the standard protocol is **3**, seeded `seed + m_idx` |
 | `--seed` | 42 | base seed; the balanced design uses 42 / 45 / 48 / 52 / 55 / 61 |
-| `--split` | `hash` | `hash` or `system` — **different experiments**, not comparable |
-| `--epochs` | 500 | max epochs (early stopping, patience 60) |
+| `--split` | `hash` | `hash` or `system` — different experiments, not comparable |
+| `--epochs` | 500 | max epochs; early stopping, patience 60 |
 | `--force` | off | overwrite a directory that already holds checkpoints |
 
+Roughly **2.5 minutes per member** on a 4090, so a 3-member ensemble is ~8
+minutes.
+
 **Two safety features exist because of real defects.** The trainer refuses to
-write into a directory that already holds checkpoints (three retrains were lost
-to silent overwrites), and every log carries a `[sentinel] |dW| = ...` line after
-epoch 0 proving the weights moved. That sentinel exists because a refactor once
-pulled `zero_grad/backward/step` inside a `if train and LAMBDA_REG:` guard — the
-KAN was unaffected (`LAMBDA_REG = 2e-3`), but **this project's `LAMBDA_REG` is
-0.0**, so the MLP took zero optimiser steps and reported flat loss with "best @
-epoch 0", which reads exactly like instant convergence. That run is preserved as
-`models_part1_mlp_r1_BROKEN_no_optimiser_step/`.
+write into a directory that already holds checkpoints — three retrains were lost
+to silent overwrites — so `--force` is deliberate, never routine. And every log
+carries a `[sentinel] |dW| = ...` line after epoch 0 proving the weights actually
+moved. That sentinel exists because a refactor once pulled
+`zero_grad/backward/step` inside an `if train and LAMBDA_REG:` guard, and this
+model's `LAMBDA_REG` is **0.0** — so it took zero optimiser steps and reported
+flat loss with "best @ epoch 0", which reads exactly like instant convergence.
+That run is preserved as `models_part1_mlp_r1_BROKEN_no_optimiser_step/` and is
+excluded everywhere, including the app.
 
-Roughly **2.5 min per member** on the 4090, so a 3-member ensemble is ~8 min.
-
-Environment knobs: `PART1_SPLIT`, `PART1_LAMBDA_HRR` (default 0.3),
-`PART1_LAMBDA_CLOSURE` / `PART1_LAMBDA_GEOM` (default 0.0), `PART1_SIMS_DIR`.
-The review-response campaign adds its own env-guarded hooks — see
-`campaign_hooks.py` and the `run_*.ps1` drivers.
+Environment knobs: `PART1_SPLIT`, `PART1_LAMBDA_HRR` (0.3),
+`PART1_LAMBDA_CLOSURE` and `PART1_LAMBDA_GEOM` (0.0 — the physics ablations),
+`PART1_SIMS_DIR`.
 
 ### Reading the run directories
 
+Naming is systematic, and the log beside each run is its provenance.
+
 | Pattern | What it is |
 |---|---|
-| `models_mlp`, `models_mlp_70_15_15*`, `models_mlp_80_10_10*` | 60-sim ablation, by split ratio; `_grouped`, `_stratified` variants use the leakage-fixed splits |
-| `models_mlp_reg_A0..A4` | regularisation sweep (dropout, weight decay, hidden width) |
-| `models_mlp_leakctrl*` | leakage-control experiment (and its swapped controls) |
-| `models_mlp_loco_f00..f19` | leave-one-configuration-out folds |
-| `models_mlp_causal16*`, `models_mlp_ext16*`, `models_mlp_c16drop*` | causal-structure and 16-sensor variants |
-| `models_mlp_singleres_M009` | single-resolution control |
-| `models_part1_bal_s{42,45,48,52,55,61}_r{1,2,3}` | the **balanced 12+ design**: 3 independent retrains at each base seed, separating within-seed (cudnn non-determinism, ~0.018) from between-seed variance (~0.062) |
-| `models_part1_mlp_r1..r5`, `models_part1_r1`, `models_part1_final_r1` | Part1 main sequence |
+| `models_part1_bal_s{42,45,48,52,55,61}_r{1,2,3}` | the **balanced design** — 3 independent retrains at each of six base seeds |
+| `models_part1_mlp_r1..r5`, `models_part1_r1`, `models_part1_final_r1` | main sequence |
 | `models_part1_fix184_*`, `*_c184`, `models_part1_184_r1` | runs on the corrected 184-configuration corpus |
 | `models_part1_sys_mlp_seed*` | `PART1_SPLIT=system` — **not comparable** to hash runs |
-| `models_part1_mlp_r1_BROKEN_no_optimiser_step` | preserved defect; excluded everywhere, including the app |
+| `models_part1_mlp_r1_BROKEN_no_optimiser_step` | preserved defect; excluded everywhere |
+
+The balanced design exists because one spread number conflates two things:
+**within-seed** variance (cuDNN non-determinism leaves the per-member draw
+random, ~0.018) and **between-seed** variance (~0.062, about 3.4× larger). An
+unbalanced, seed-42-heavy pool has a composition-dependent mean, so runs are
+reported by seed cell, with equal cells so the decomposition is a plain one-way
+ANOVA and there are no weighting decisions to defend.
 
 ---
 
@@ -231,45 +178,45 @@ The review-response campaign adds its own env-guarded hooks — see
 ```powershell
 python evaluate_part1.py     --model-dir models_part1_bal_s61_r2
 python metrics_full_part1.py --model-dir models_part1_bal_s61_r2 --split test
-python compare_splits.py
-python dump_per_sensor_ext.py
-python dump_ts_part1.py
-python time_inference_part1.py
-python explain_part1.py            # SHAP attribution
-python causal_part1.py             # interventional / causal explainability
-python shap_attribution.py         # 60-sim SHAP
+python time_inference_part1.py               # inference cost on the test split
+python dump_ts_part1.py                      # per-case time series
+python dump_per_sensor_ext.py                # per-sensor test metrics
+python explain_part1.py                      # SHAP attribution
+python causal_part1.py                       # interventional explainability
 ```
 
-`evaluate_part1.py` is the **frozen evaluation contract** — fixed before any
-candidate model existed and byte-identical across every Part1 sensor project. Per
-split it reports pooled and per-group TC R²/RMSE in °C, R²/RMSE per HRR channel
-in kW, a **per-geometry breakdown**, and physics sanity gates. Results land in
-`evaluation_part1.json` in the run directory, which is what the root-level
-`select_best_model.py` and `collect_model_comparison.py` read.
+`evaluate_part1.py` is a **frozen contract**, fixed before any candidate model
+existed. A candidate needing different scoring is a different experiment. Per
+split it reports:
 
-### Reading the result
+- pooled and per-group R² / RMSE on the 16 thermocouples, in °C;
+- R² / RMSE per HRR channel, in kW;
+- a **per-geometry breakdown** — the point of this corpus is whether removing the
+  cavity, the gaps or the barriers is predictable, so a pooled number that hides
+  a failure on one geometry is not an answer;
+- physics sanity gates, pass/fail.
 
-**Compare populations, never single runs.** The KAN champion on the 60-sim corpus
-is a 3-replicate population (`bs8414_KAN_surrogate/bestofn_v9_summary.txt`):
-valid R² 0.8297 ± 0.0040, test R² 0.8472 ± 0.0257, combined 0.8384 ± 0.0121. Test
-R² alone swings ~0.05 between identical retrains, so a single MLP run proves
-nothing. `compare_with_kan.py` compares 3-vs-3 means and reports any delta inside
-the **±0.02 R² band as inconclusive**, never as a win. Physics sanity
-(`validate_physics.py`) must pass before any accuracy claim counts — a better R²
-with broken physics is reported as broken.
+Metrics are computed on unstandardised values over reported timesteps only, and
+ensembles are averaged in physical space. Results land in
+`evaluation_part1.json` inside the run directory.
 
-On **Part1 (hash split)** the best available run is `models_part1_bal_s61_r2`:
-combined valid+test TC R² **0.8096** (valid 0.8063 / test 0.8130, test RMSE
-61.8 °C, HRR R² 0.951), chosen from 35 candidates with a **0.0094** margin —
-inside the noise band, so best-available rather than significantly best. The
-balanced design showed between-seed variance (~0.062) is **3.4×** the within-seed
-spread (~0.018), which is why runs are reported by seed cell and why an
-unbalanced, seed-42-heavy pool has a composition-dependent mean.
+### Where the numbers stand
 
-Against the Part1 KAN's 0.8526, the gap is 0.043 — outside ±0.02 — but state it
-with the design: balanced 3×n replicate populations on the hash split, physics
-gates passing on both. Cross-architecture numbers for every arm are collected in
-`..\model_comparison.csv`.
+- **Best available run: `models_part1_bal_s61_r2`** — combined valid+test TC R²
+  **0.8096** (valid 0.8063 / test 0.8130, test RMSE 61.8 °C, HRR R² 0.951),
+  selected from 35 candidates on the hash split. The margin over the runner-up is
+  **0.0094**, inside the ±0.02 band this work treats as inconclusive — best
+  available, not significantly best.
+- **The HRR head works** — R² 0.93–0.95 on total HRR across every run and split.
+- **`nocb` is the hardest geometry.** With no cavity barriers the cavity flow is
+  unobstructed and the plume path more chaotic, so point thermocouples are less
+  predictable. Per-geometry n is small on test; directional.
+
+Physics gates must pass before any accuracy claim counts. The growth-monotonicity
+gate compares the prediction against the ground truth on the same cases and asks
+whether the model is *less* physical than the simulation it imitates — an earlier
+absolute version failed on the FDS data itself, because an LES point thermocouple
+is not monotonic at 10 s sampling.
 
 ---
 
@@ -278,124 +225,96 @@ gates passing on both. Cross-architecture numbers for every arm are collected in
 ```powershell
 cd D:\VS_projects\bs8414_MLP_surrogate
 .\run_app.ps1                 # http://localhost:8501
-.\run_app.ps1 -Port 8502      # alongside the KAN app for a side-by-side
+.\run_app.ps1 -Port 8502      # a second instance alongside the first
 ```
 
-`run_app.ps1` activates this venv, picks `app_part1.py`, exports the material
-table if it is missing, prints GPU status, then starts Streamlit. Manual
-equivalent: `.\venv\Scripts\activate ; streamlit run app_part1.py`.
+`run_app.ps1` activates the venv, exports the material table if missing, prints
+GPU status, then starts Streamlit. Manual equivalent:
+`.\venv\Scripts\activate ; streamlit run app_part1.py`.
 
 Pick a **cladding × insulation × geometry** build-up and it predicts the 16
-external thermocouples and the 5-channel HRR budget over the 0–1800 s / 10 s
-grid, auto-predicting on every change in under a second. Tabs: per-group TC curves
-with an optional ±1 sd ensemble band and a peak table; the HRR budget with its
-closure residual; a BR 135 external screen; and a data tab with CSV export and the
-exact 16-d input vector.
+thermocouples and the HRR budget, auto-updating on every change in under a
+second. Tabs: per-group TC curves with an optional ±1 sd ensemble band and a peak
+table; the HRR budget with its closure residual; a BR 135 external screen; and a
+data tab with CSV export and the exact 16-d input vector. The material-property
+editor is prefilled with the build-up's exact FDS values and can be edited to
+probe sensitivity.
 
-`app_part1.py` is **byte-identical** to the KAN project's copy and binds only to
-`Part1Surrogate` / `MODEL_NAME` from `model_part1.py` — the one file that differs.
-Run both apps on different ports and any difference you see is attributable to the
-architecture, which is the whole point of this project.
-
-The run selector ranks directories by the recorded `combined_tc_r2`;
+The run picker ranks directories by the recorded `combined_tc_r2`;
 **★ selected** is `models_part1_bal_s61_r2`, whose weights are the only ones kept
-out of `.gitignore` so a fresh clone can predict without retraining. Currently 39
-runs offered, 1 hidden (the BROKEN one).
+out of `.gitignore` so a fresh clone can predict without retraining.
 
-**Prediction only** — the app never reads `D:\Bs8414_05052026`. Runtime inputs are
-the checkpoint plus `app_assets/part1_materials.json`, written once by the
-root-level `export_app_assets.py`, which refuses to write unless a
-cladding/insulation id provably fixes its material block.
+**Prediction only** — the app never reads `D:\Bs8414_05052026`. Its runtime
+inputs are the checkpoint and `app_assets/part1_materials.json`, written once by
+an export step that refuses to write unless a cladding/insulation id provably
+fixes its material block, so the shipped table is exact rather than an average
+over two systems sharing a name.
 
-**Part1 enforced from the checkpoint, not the filename**: a run is offered only if
-it carries 16 `sensor_names` *and* an HRR head, so a 60-sim checkpoint (24 TCs, no
-HRR head) cannot load into a 16-channel model and silently mislabel channels.
-Directories containing `BROKEN` are excluded outright. Anything hidden is listed in
-the sidebar with the reason.
+**Part1 is enforced from the checkpoint, not the filename**: a run is offered
+only if it carries 16 `sensor_names` *and* an HRR head. Directories containing
+`BROKEN` are excluded outright. Anything hidden is listed in the sidebar with the
+reason, so a missing run is visible rather than mysterious.
 
 What the app refuses to claim:
 
 - **Geometry cannot extrapolate** — an 8-way embedding over *observed* flag
-  combinations; an absent build-up gets a warning banner, not a plausible curve.
-- **BR 135 external only** — Part1 instruments the external face, so the internal
-  fire-spread criterion cannot be assessed. A surrogate reading, not a test result.
+  combinations. A build-up the corpus never contained gets a warning banner, not
+  a quietly plausible curve.
+- **BR 135 external only** — a surrogate reading, not a classification and not a
+  test result.
 - **The ensemble band is member disagreement**, not a calibrated interval.
 - **`Q_TOTAL` is a residual budget term** near numerical noise, labelled as such.
 
-`app_common_part1.py`, `app_part1.py` and `run_app.ps1` are byte-identical across
-the projects that hold them — never hand-edit one copy; edit and re-copy. Full app
-contract: `..\APPS.md`.
-
 ---
 
-### Repository layout
-
-Run logs, analysis records and before-state snapshots are grouped so the project
-root holds only what you run:
+## Layout
 
 ```
-<project>/
-  README.md            this file
-  *.py                 all modules and entry points — flat, at the root
-  models_*/            checkpoints + per-run provenance JSON
-  app_assets/          part1_materials.json, selected_model.json
-  docs/                results records and analyses (PART1_RESULTS.md, analysis_*.md, ...)
-  logs/                paired .log / .err.log run logs — the provenance of every number
-  archive/             before-state snapshots of deliberate edits (*.pre-*, *.bak)
+config_part1.py           corpus contract: design space, split, targets, exclusions
+data_loader_part1.py      CHID parsing, material extraction, split assignment
+part1_dataset.py          corpus loader helper
+layers_part1.py           MLPLinear, matched_hidden, TimeEncoding, MultiScaleConv
+model_part1.py            the architecture
+train_part1.py            trainer
+evaluate_part1.py         frozen evaluation contract
+physics_part1.py          physics gates + optional closure/geometry penalties
+metrics_full_part1.py     additional descriptive metrics
+time_inference_part1.py   inference cost
+dump_ts_part1.py          per-case time series for the test split
+dump_per_sensor_ext.py    per-sensor test metrics
+explain_part1.py          SHAP attribution
+causal_part1.py           interventional / causal explainability
+verify_parity_part1.py    SHA-256 + array-hash proof of the shared data layer
+app_common_part1.py       shared Streamlit input layer
+app_part1.py              the Streamlit app
+run_app.ps1               app launcher
+app_assets/               part1_materials.json + selected_model.json
+models_part1_*/           checkpoints + per-run provenance JSON
+logs/                     paired .log / .err.log — provenance of every number
 ```
 
-**Python stays at the project root, deliberately.** Every module imports flat
-(`from config_part1 import ...`) and `config.py` / `config_part1.py` derive
-`PROJECT_DIR`, `MODEL_DIR`, `OUTPUT_DIR` and `SLICE_DIR` from `__file__` — moving
-them into a `src/` package would silently repoint model and slice paths, and
-those files must stay byte-identical across all eleven surrogate projects for
-`verify_parity_part1.py` to pass. New run logs still land at the root; move them
-into `logs/` when you tidy.
+Python sits at the project root deliberately: modules import flat
+(`from config_part1 import ...`), and `config_part1.py` derives `PROJECT_DIR`,
+`MODEL_DIR` and `SLICE_DIR` from `__file__`, so a `src/` package would silently
+repoint model and data paths.
 
-`CLAUDE.md` is git-ignored: it is the working brief for agent sessions, not part
-of the published artefact.
-
----
-
-## Third-party measured data is not distributed
-
-Some figures in the wider study compare measured DCLG thermocouple traces
-against the surrogate. Those measurements were supplied by a third party and
-are **not this project's data to publish**, so neither the data nor the scripts
-that read it are in this repository: `measured_traces.py`,
-`measured_1003_1029.py` and `origin_figures.py` are git-ignored and absent.
-
-Nothing in the pipeline depends on them. The surrogate is trained and scored
-against **FDS output**, not against measurements, so training, evaluation, the
-physics gates, the parity checkers and the Streamlit app all run on a fresh
-clone exactly as documented above.
-
-To reproduce those particular comparison figures, obtain the measurements from
-their owner and supply your own plotting script.
+Weights are git-ignored by extension rather than by directory, so per-run
+`evaluation_part1.json` and `history_member*.json` stay tracked — git cannot
+re-include a file inside an excluded directory. Run logs are tracked on purpose:
+they are the provenance of every number above.
 
 ---
 
-## Non-negotiables
+## Working rules
 
-See `CLAUDE.md` for the full list; the short version:
-
-1. **Never change the data pipeline.** `data_loader.py`, `anchor_features.py`,
-   `features_v4.py`, `features_v6.py` are byte-identical transplants and
-   `verify_parity.py` checks their SHA-256 plus the resulting arrays. If the KAN
-   project changes one, **re-copy it** and re-run the checker — never hand-edit.
-   The same rule governs every shared `*_part1.py` file and
-   `verify_parity_part1.py`.
-2. **Never change the data root.** `config.SIMS_DIR` points at the KAN project's
-   `data/training_data`; `config_part1.SIMS_DIR` at the Part1 batch.
-3. **One variable only.** Anything that changes the input, the split, the
-   backbone, the loss or the evaluation makes this a different experiment rather
-   than a control.
-4. **Populations, not single runs**; **±0.02 R² is inconclusive**; **physics gates
-   before accuracy claims**; **always state the split** (`hash` or `system`).
-
-## Related
-
-`..\CLAUDE.md` (project map, Part1 contract) · `..\APPS.md` (app and deployment
-contract) · `CLAUDE.md` (this project's working rules) ·
-`bs8414_KAN_surrogate` (the arm under test) · `bs8414_surrogate_model`
-(Attention-LSTM V3 baseline) · `bs8414_samba_mlp_surrogate` (MLP-Samba sensor arm).
+- **`config_part1.py` is the source of truth** for the corpus; read it before
+  changing anything.
+- **Never hand-edit a shared file.** The data layer is byte-identical across the
+  surrogate family; edit one copy, re-copy, then re-run `verify_parity_part1.py`.
+- **Populations, not single runs.** Report a delta inside **±0.02 R²** as
+  inconclusive, never as a win.
+- **Physics gates before accuracy claims.** A better R² with a failing gate is
+  reported as broken.
+- **State the split.** `hash` and `system` answer different questions.
+- **Preserve checkpoints.** Every run goes to its own named directory; never
+  re-point an existing one.

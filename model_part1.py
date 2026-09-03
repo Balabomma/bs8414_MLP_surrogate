@@ -37,7 +37,7 @@ from config_part1 import (
     EMBEDDING_DIM, LSTM_HIDDEN_SIZE, ATTENTION_HEADS, DROPOUT, NUM_KNOTS,
     T_AMBIENT, COL_CLADDING, COL_INSULATION, COL_GEOM,
 )
-from model import MLPLinear, TimeEncoding, MultiScaleConv
+from layers_part1 import MLPLinear, TimeEncoding, MultiScaleConv
 
 MATCH_PARAMS = True
 
@@ -179,7 +179,7 @@ def count_parameters(model):
 
 
 # ── uniform interface (see the KAN project's model_part1.py) ──────────────
-MODEL_NAME = "MLP-Attention-LSTM (Part1, KAN ablation control)"
+MODEL_NAME = "MLP-Attention-LSTM (Part1)"
 Part1Surrogate = Part1MLPAttentionLSTM
 
 # No spline weights to regularise. Disclosed difference, not an omission.
