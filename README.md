@@ -85,6 +85,14 @@ training**.
 
 ---
 
+> **Five 60-sim helpers are not in this repository** — `validate_physics.py`,
+> `killer_excluded.py`, `bestofn_driver.py`, `dump_per_sensor.py` and
+> `_greedy.py` are kept on the research machine. Everything the ablation
+> argument rests on **is** published: `train.py`, `evaluate.py`,
+> `data_loader.py`, `model.py`, `verify_parity.py`, `compare_with_kan.py` and
+> the manuscript scripts, because those are what make the KAN-vs-MLP comparison
+> checkable by someone else.
+
 ## Layout
 
 ```
